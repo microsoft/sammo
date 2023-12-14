@@ -1,0 +1,58 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: SAMMO
+author: Tobias Schnabel
+copyright: "2023"
+exclude_patterns:
+  - examples*
+  - .*
+  - sammo*
+  - dev*
+  - utils*
+  - data*
+  - deprecated*
+  - cache*
+  - "*.md"
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: off
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - docs/references.bib
+
+# Information about where the book exists on the web
+repository:
+  url: https://microsoft.github.io/sammo/  # Online location of your book
+  path_to_book: docs  # Optional path to your book, relative to the repository root
+  branch: master  # Which branch of the repository should be used when creating links (optional)
+
+launch_buttons:
+  binderhub_url             : https://mybinder.org
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
+
+sphinx:
+  extra_extensions:
+  - autodoc2
+  config:
+    nb_merge_streams: true
+    autodoc2_index_template: null
+    autodoc2_output_dir: build/apidocs
+    autodoc2_module_all_regexes:
+      - "sammo.*(throttler|store|utils|search_op|data|compactbars|components).*"
+    autodoc2_packages:
+      - sammo
+    autodoc2_hidden_objects:
+      - inherited
+      - private
+      - dunder
+    autodoc2_skip_module_regexes:
+      - .*test.*

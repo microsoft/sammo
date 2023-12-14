@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "sammo"
+version = "0.1.0"
+description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
+authors = ["Tobias Schnabel"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/microsoft/sammo/"
+documentation = "https://microsoft.github.io/sammo/docs/"
+packages = [
+    { include = "sammo" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10,<3.12"
+beartype = "^0.15"
+benepar = {version = "^0.2", optional = true}
+docstring_inheritance = "*"
+typing_extensions = "^4.0"
+filelock = "^3.12"
+frozendict = "^2.3"
+jsonpath_ng = "^1.5"
+markdown-it-py = "^2.2"
+more-itertools = "^10.1"
+numpy = "^1.25"
+openai = "^0.27"
+orjson = "^3.9"
+pybars3 = "^0.9"
+pyglove = "^0.4"
+spacy = "^3.6"
+tabulate = "^0.9"
+tiktoken = "^0.4"
+xmltodict = "^0.13"
+PyYAML = "^6.0"
+
+[tool.poetry.extras]
+parser = ["benepar"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4"
+pytest-skip-slow = "*"
+pytest-mock = "*"
+pytest-asyncio = "*"
+black = "^23"
+jupyter-book = "^0.15"
+astroid = "2.15.8"
+sphinx-autodoc2 = "*"
+pandas = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

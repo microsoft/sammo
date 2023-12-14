@@ -1,0 +1,17 @@
+format: jb-book
+root: docs/index
+parts:
+  - chapters:
+    - file: tutorials/0_quickstart
+  - caption: 💡 Tutorials
+    numbered: true
+    chapters:
+      - glob: tutorials/[!0]_*
+  - caption: Special Topics
+    chapters:
+      - glob: tutorials/special_topics/*
+  - caption: 📖 API Reference
+    chapters:
+    - file: build/apidocs/sammo/sammo
+  - chapters:
+    - file: docs/release_history

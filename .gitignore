@@ -1,0 +1,15 @@
+/config
+build
+**/cache/
+*.lock
+.*/
+_*/
+/dist
+/cache
+/deprecated
+/data
+/utils
+/examples
+/*.ipynb
+/*.json
+*.txt
