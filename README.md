@@ -1,16 +1,13 @@
 # SAMMO
 
-```{image} https://img.shields.io/pypi/v/sammo.svg
-:alt: Latest PyPI version
-:target: https://pypi.python.org/pypi/sammo
-```
+[![Latest PyPI version](https://img.shields.io/pypi/v/sammo.svg)](https://pypi.python.org/pypi/sammo)
+
 
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
-![Overview](overview.png)
+![Overview](docs/overview.png)
 
-% inclusion-marker-start
-
+<!--start-->
 ## Installation
 
 ```bash
@@ -62,14 +59,11 @@ questions = [
 print(Output(joint_answer).run(runner, questions))
 ```
 
-
-
+<!--end-->
 
 ## Licence
 
 This project is licensed under [MIT](https://choosealicense.com/licenses/mit/).
-
-% inclusion-marker-end
 
 ## Authors
 
