@@ -1,0 +1,1082 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Installing SAMMO &#8212; SAMMO</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" href="../_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/0_underspecification';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+  
+
+<a class="navbar-brand logo" href="../docs/index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">SAMMO</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../docs/index.html">
+                    🏠 Overview
+                </a>
+            </li>
+        </ul>
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="0_quickstart.html">🚀 Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">💡 Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="1_working_with_data.html">1. Working with Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_using_components.html">2. Using components to write metaprompts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_basic_prompt_engineering.html">3. Basic Prompt Engineering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_minibatching.html">4. Minibatching for Call Efficiency</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">📖 API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../build/apidocs/sammo/sammo.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo</span></code></a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.base.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.base</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.compactbars.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.compactbars</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.components.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.components</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.data.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.data</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.dataformatters.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.dataformatters</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.extractors.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.extractors</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.instructions.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.instructions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.mutators.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.mutators</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.runners.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.runners</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.scheduler.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.scheduler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.search.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.search</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.search_op.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.search_op</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.store.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.store</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.throttler.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.throttler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.utils.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.utils</span></code></a></li>
+</ul>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../docs/release_history.html">Release History</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://mybinder.org/v2/gh/executablebooks/jupyter-book/master?urlpath=tree/docs/tutorials/0_underspecification.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onBinder"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="../_static/images/logo_binder.svg">
+  </span>
+<span class="btn__text-container">Binder</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book/issues/new?title=Issue%20on%20page%20%2Ftutorials/0_underspecification.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/tutorials/0_underspecification.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Installing SAMMO</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Installing SAMMO</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#experiment-1-single-turn-responses">Experiment 1: Single-turn responses</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#aside-label-system-responses">Aside: Label system responses</a></li>
+</ul>
+</li>
+</ul>
+
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section id="installing-sammo">
+<h1>Installing SAMMO<a class="headerlink" href="#installing-sammo" title="Permalink to this heading">#</a></h1>
+<ol class="arabic simple">
+<li><p>In no particular order:</p>
+<ul class="simple">
+<li><p>Install poetry.</p></li>
+<li><p>Download sammo_prerelease.zip and unzip.</p></li>
+</ul>
+</li>
+<li><p>Navigate to the unzipped SAMMO folder in command shell.</p></li>
+<li><p>Create and activate a new virtual environment or conda environment.</p></li>
+<li><p>Then</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">poetry</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>Find the preliminary documentation in <code class="docutils literal notranslate"><span class="pre">_build\html\index.html</span></code>.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="experiment-1-single-turn-responses">
+<h1>Experiment 1: Single-turn responses<a class="headerlink" href="#experiment-1-single-turn-responses" title="Permalink to this heading">#</a></h1>
+<p>Let’s load the data</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load from parent directory if not installed</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;sammo&quot;</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">sys</span>
+
+    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;../&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell tag_hide-input docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">sammo.data</span> <span class="kn">import</span> <span class="n">DataTable</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">sammo</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">sammo.runners</span> <span class="kn">import</span> <span class="n">OpenAIChat</span>
+<span class="kn">from</span> <span class="nn">sammo.base</span> <span class="kn">import</span> <span class="n">EvaluationResult</span>
+<span class="kn">from</span> <span class="nn">sammo.search</span> <span class="kn">import</span> <span class="n">EnumerativeSearch</span>
+<span class="kn">from</span> <span class="nn">sammo.search_op</span> <span class="kn">import</span> <span class="n">one_of</span>
+<span class="kn">from</span> <span class="nn">sammo.base</span> <span class="kn">import</span> <span class="n">Template</span>
+<span class="kn">from</span> <span class="nn">sammo.components</span> <span class="kn">import</span> <span class="n">Output</span><span class="p">,</span> <span class="n">GenerateText</span>
+<span class="kn">from</span> <span class="nn">sammo.extractors</span> <span class="kn">import</span> <span class="n">ExtractRegex</span><span class="p">,</span> <span class="n">LambdaExtractor</span><span class="p">,</span> <span class="n">ToNum</span>
+
+<span class="n">API_CONFIG_FILE</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">()</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span> <span class="o">/</span> <span class="s2">&quot;personal.openai&quot;</span>
+<span class="n">API_CONFIG</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="k">if</span> <span class="n">API_CONFIG_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">API_CONFIG</span> <span class="o">=</span> <span class="n">API_CONFIG_FILE</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">API_CONFIG</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Please set API_CONFIG to {&quot;api_key&quot;: &quot;YOUR_KEY&quot;}&#39;</span><span class="p">)</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="n">sammo</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">)</span>  <span class="c1"># we&#39;re only interested in warnings for now</span>
+
+<span class="n">runner</span> <span class="o">=</span> <span class="n">OpenAIChat</span><span class="p">(</span>
+    <span class="n">model_id</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">,</span>
+    <span class="n">api_config</span><span class="o">=</span><span class="n">API_CONFIG</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="s2">&quot;cache/underspecification.tsv&quot;</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">underspecified</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Will the current political situation in my country improve?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;country, definition of political situation&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Is my outfit appropriate for the event I&#39;m attending tonight?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;type of event, outfit&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Is it safe for me to eat a peanut butter cookie?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;allergies&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Are these flowers I got safe?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;type of flower, allergies, usage&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Am I breaking the law by waterboarding?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;meaning of the term waterboarding&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;I&#39;m sick on a plane - will a passenger named Dr. Smith be able to help me?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;doctorate being medical&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Is the number I&#39;m thinking of prime?&quot;</span><span class="p">,</span> <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;A bank offers savings accounts with 5</span><span class="si">% i</span><span class="s2">nterest rate. If I put my money there, will the value of my holdings increase over time in terms of real dollars?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;country, inflation &quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;Will this pillow match my couch?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;depends_on&quot;</span><span class="p">:</span> <span class="s2">&quot;style of pillow, style of couch&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">]</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">DataTable</span><span class="p">(</span><span class="n">underspecified</span><span class="p">)</span>
+<span class="n">data</span>
+</pre></div>
+</div>
+</div>
+</details>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>+----------------------------------------------------+----------+
+| input                                              | output   |
++====================================================+==========+
+| {&#39;question&#39;: &#39;Will the current political situation | None     |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     | None     |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       |          |
+| &#39;type...                                           |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    | None     |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      | None     |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             | None     |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     |          |
+| term waterb...                                     |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         | None     |
+| passenger named Dr. Smith be able to help me?&quot;,    |          |
+| &#39;depen...                                          |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        | None     |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  | None     |
+| 5% interest rate. If I put my money there, will... |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   | None     |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   |          |
++----------------------------------------------------+----------+
+Constants: None
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">BASELINE_PROMPTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;baseline&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;asks&quot;</span><span class="p">:</span> <span class="s2">&quot;When faced with a question whose answer depends on a lot of factors, ask for the most relevant information to answer.&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hedges&quot;</span><span class="p">:</span> <span class="s2">&quot;When faced with a question whose answer depends on a lot of factors, generate an answer for each important case.&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">run_baseline</span><span class="p">(</span><span class="n">sys_prompt</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="c1"># Answer user question</span>
+    <span class="n">answer_single_turn</span> <span class="o">=</span> <span class="n">GenerateText</span><span class="p">(</span>
+        <span class="n">Template</span><span class="p">(</span><span class="s2">&quot;Question: {{</span><span class="si">{input.question}</span><span class="s2">}}&quot;</span><span class="p">),</span> <span class="n">system_prompt</span><span class="o">=</span><span class="n">sys_prompt</span>
+    <span class="p">)</span>
+    <span class="n">system_responses</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">answer_single_turn</span><span class="p">)</span><span class="o">.</span><span class="n">run_on_datatable</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">system_responses</span><span class="p">)</span>
+
+    <span class="c1"># Utility: Count aspects -- ToDo: chain-of-thought</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+        <span class="s2">&quot;Count the number of aspects from this list &lt;list&gt;{{input.depends_on}}&lt;/list&gt; that are mentioned/asked about in the response. &lt;response&gt;{{response}}&lt;/response&gt;&quot;</span><span class="p">,</span>
+        <span class="n">response</span><span class="o">=</span><span class="n">answer_single_turn</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">util</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span>
+        <span class="n">ToNum</span><span class="p">(</span>
+            <span class="n">GenerateText</span><span class="p">(</span>
+                <span class="n">count</span><span class="p">,</span> <span class="n">system_prompt</span><span class="o">=</span><span class="s2">&quot;Only output a single number, nothing else.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">run_on_datatable</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">util</span><span class="p">)</span>
+    <span class="n">utility</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span>
+    
+    <span class="c1"># Cost: Count number of words</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">Output</span><span class="p">(</span><span class="n">LambdaExtractor</span><span class="p">(</span><span class="n">answer_single_turn</span><span class="p">,</span> <span class="s2">&quot;lambda x: len(x.split(&#39; &#39;))&quot;</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">run_on_datatable</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;utility&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="n">x</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;depends_on&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">utility</span><span class="p">,</span> <span class="n">underspecified</span><span class="p">)</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;cost&quot;</span><span class="p">:</span> <span class="n">lengths</span><span class="p">,</span>
+        <span class="s2">&quot;answer_prompt&quot;</span><span class="p">:</span> <span class="n">answer_single_turn</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
+<span class="n">results_flat</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+<span class="n">results</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">sys_prompt</span> <span class="ow">in</span> <span class="n">BASELINE_PROMPTS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">run_baseline</span><span class="p">(</span><span class="n">sys_prompt</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span>
+    <span class="n">results_flat</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span> <span class="s2">&quot;utility&quot;</span><span class="p">:</span> <span class="n">u</span><span class="p">,</span> <span class="s2">&quot;cost&quot;</span><span class="p">:</span> <span class="n">c</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;utility&quot;</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="s2">&quot;cost&quot;</span><span class="p">])</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results_flat</span><span class="p">)</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[###################################################################################]9/9[00:00&lt;??:??, 0.00it/s]
++----------------------------------------------------+----------------------------------------------------+
+| input                                              | output                                             |
++====================================================+====================================================+
+| {&#39;question&#39;: &#39;Will the current political situation | As an AI, I don&#39;t have real-time data or the       |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  | ability to predict future events. I suggest        |
+|                                                    | staying ...                                        |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     | As an AI, I&#39;m unable to see or evaluate your       |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       | outfit. However, I can give you general advice.    |
+| &#39;type...                                           | Cons...                                            |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    | As an AI, I don&#39;t have access to your personal     |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        | health information. If you have a peanut allergy,  |
+|                                                    | ...                                                |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      | As an AI, I&#39;m unable to physically examine the     |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  | flowers you received. However, most common         |
+|                                                    | flowers...                                         |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             | Yes, waterboarding is considered a form of torture |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     | and is illegal under international law and in ...  |
+| term waterb...                                     |                                                    |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         | It depends on whether Dr. Smith is a medical       |
+| passenger named Dr. Smith be able to help me?&quot;,    | doctor or not. If they are, they could potentially |
+| &#39;depen...                                          | p...                                               |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        | As an AI, I don&#39;t have the ability to know what    |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   | number you&#39;re thinking of. Please provide the      |
+|                                                    | num...                                             |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  | Yes, the value of your holdings will increase over |
+| 5% interest rate. If I put my money there, will... | time in terms of nominal dollars due to the 5%...  |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   | As an AI, I&#39;m unable to physically see or assess   |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   | your couch and the pillow to determine if they     |
+|                                                    | m...                                               |
++----------------------------------------------------+----------------------------------------------------+
+Constants: None
+minibatches[###################################################################################]9/9[00:00&lt;??:??, 0.00it/s]
++----------------------------------------------------+----------+
+| input                                              |   output |
++====================================================+==========+
+| {&#39;question&#39;: &#39;Will the current political situation |        0 |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     |        2 |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       |          |
+| &#39;type...                                           |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    |        1 |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      |        0 |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             |        0 |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     |          |
+| term waterb...                                     |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         |        2 |
+| passenger named Dr. Smith be able to help me?&quot;,    |          |
+| &#39;depen...                                          |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        |        0 |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  |        1 |
+| 5% interest rate. If I put my money there, will... |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   |        2 |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   |          |
++----------------------------------------------------+----------+
+Constants: None
+minibatches[###################################################################################]9/9[00:00&lt;??:??, 0.00it/s]
+minibatches[###################################################################################]9/9[00:00&lt;??:??, 0.00it/s]
++----------------------------------------------------+----------------------------------------------------+
+| input                                              | output                                             |
++====================================================+====================================================+
+| {&#39;question&#39;: &#39;Will the current political situation | To provide a more accurate answer, I would need    |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  | more information such as:  1. What is your         |
+|                                                    | countr...                                          |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     | To answer your question, I would need the          |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       | following information:   1. What is the nature of  |
+| &#39;type...                                           | the e...                                           |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    | To answer this question, I would need to know the  |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        | following information:  1. Do you have any alle... |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      | To answer your question, I would need more         |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  | information such as:  1. What type of flowers did  |
+|                                                    | you ...                                            |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             | To answer this question, I would need to know the  |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     | context in which you&#39;re asking. Are you referri... |
+| term waterb...                                     |                                                    |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         | To answer this question, I would need to know the  |
+| passenger named Dr. Smith be able to help me?&quot;,    | following information:  1. What is Dr. Smith&#39;s ... |
+| &#39;depen...                                          |                                                    |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        | To answer this question, I would need to know the  |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   | number you&#39;re thinking of.                         |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  | To answer this question, I would need the          |
+| 5% interest rate. If I put my money there, will... | following information:  1. The rate of inflation:  |
+|                                                    | If th...                                           |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   | To answer your question, I would need to know the  |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   | color, pattern, and style of both your couch an... |
++----------------------------------------------------+----------------------------------------------------+
+Constants: None
+minibatches[#################################################################################]9/9[00:00&lt;00:00, 562.50it/s]
++----------------------------------------------------+----------+
+| input                                              |   output |
++====================================================+==========+
+| {&#39;question&#39;: &#39;Will the current political situation |        2 |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     |        2 |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       |          |
+| &#39;type...                                           |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    |        1 |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      |        2 |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             |        1 |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     |          |
+| term waterb...                                     |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         |        1 |
+| passenger named Dr. Smith be able to help me?&quot;,    |          |
+| &#39;depen...                                          |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        |        0 |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  |        1 |
+| 5% interest rate. If I put my money there, will... |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   |        2 |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   |          |
++----------------------------------------------------+----------+
+Constants: None
+minibatches[#################################################################################]9/9[00:00&lt;00:00, 562.50it/s]
+minibatches[#################################################################################]9/9[00:00&lt;00:00, 600.00it/s]
++----------------------------------------------------+----------------------------------------------------+
+| input                                              | output                                             |
++====================================================+====================================================+
+| {&#39;question&#39;: &#39;Will the current political situation | Case 1: Stable Government If your country          |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  | currently has a stable government that is actively |
+|                                                    | work...                                            |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     | 1. Formal Event (Black Tie, Gala, Wedding): If     |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       | your outfit consists of a formal dress, suit, or   |
+| &#39;type...                                           | t...                                               |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    | Case 1: No Allergies If you do not have any known  |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        | allergies to peanuts or any other ingredients t... |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      | Case 1: If the flowers are common household        |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  | varieties like roses, tulips, or sunflowers, they  |
+|                                                    | are...                                             |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             | Case 1: In a Military or Intelligence Context If   |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     | you are a member of the military or an             |
+| term waterb...                                     | intellige...                                       |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         | Case 1: Dr. Smith is a Medical Doctor If Dr. Smith |
+| passenger named Dr. Smith be able to help me?&quot;,    | is a medical doctor, then yes, he should be ab...  |
+| &#39;depen...                                          |                                                    |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        | Case 1: If the number you&#39;re thinking of is less   |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   | than 2, then it is not a prime number. Prime       |
+|                                                    | num...                                             |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  | Case 1: Inflation Rate is Lower than Interest Rate |
+| 5% interest rate. If I put my money there, will... | If the inflation rate is lower than the 5% int...  |
++----------------------------------------------------+----------------------------------------------------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   | Case 1: If your couch is a solid color and the     |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   | pillow is also a solid color that complements it,  |
+|                                                    | ...                                                |
++----------------------------------------------------+----------------------------------------------------+
+Constants: None
+minibatches[###################################################################################]9/9[00:00&lt;??:??, 0.00it/s]
++----------------------------------------------------+----------+
+| input                                              |   output |
++====================================================+==========+
+| {&#39;question&#39;: &#39;Will the current political situation |        2 |
+| in my country improve?&#39;, &#39;depends_on&#39;: &#39;countr...  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is my outfit appropriate for the     |        2 |
+| event I&#39;m attending tonight?&quot;, &#39;depends_on&#39;:       |          |
+| &#39;type...                                           |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Is it safe for me to eat a peanut    |        5 |
+| butter cookie?&#39;, &#39;depends_on&#39;: &#39;allergies&#39;}        |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Are these flowers I got safe?&#39;,      |        2 |
+| &#39;depends_on&#39;: &#39;type of flower, allergies, usage&#39;}  |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Am I breaking the law by             |        0 |
+| waterboarding?&#39;, &#39;depends_on&#39;: &#39;meaning of the     |          |
+| term waterb...                                     |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;I&#39;m sick on a plane - will a         |        2 |
+| passenger named Dr. Smith be able to help me?&quot;,    |          |
+| &#39;depen...                                          |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &quot;Is the number I&#39;m thinking of        |        0 |
+| prime?&quot;, &#39;depends_on&#39;: &#39;number&#39;}                   |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;A bank offers savings accounts with  |        1 |
+| 5% interest rate. If I put my money there, will... |          |
++----------------------------------------------------+----------+
+| {&#39;question&#39;: &#39;Will this pillow match my couch?&#39;,   |        2 |
+| &#39;depends_on&#39;: &#39;style of pillow, style of couch&#39;}   |          |
++----------------------------------------------------+----------+
+Constants: None
+minibatches[###################################################################################]9/9[00:00&lt;??:??, 0.00it/s]
+</pre></div>
+</div>
+<div class="output text_html"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>utility</th>
+      <th>cost</th>
+    </tr>
+    <tr>
+      <th>method</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asks</th>
+      <td>0.796296</td>
+      <td>65.888889</td>
+    </tr>
+    <tr>
+      <th>baseline</th>
+      <td>0.611111</td>
+      <td>46.111111</td>
+    </tr>
+    <tr>
+      <th>hedges</th>
+      <td>1.240741</td>
+      <td>238.111111</td>
+    </tr>
+  </tbody>
+</table>
+</div></div></div>
+</div>
+<section id="aside-label-system-responses">
+<h2>Aside: Label system responses<a class="headerlink" href="#aside-label-system-responses" title="Permalink to this heading">#</a></h2>
+<p>Note: It’s actually easier to chain this with the original prompt than to feed it as a new datatable.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">rubric</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">You are a human grader labeling a response from an AI system.</span>
+<span class="s2">Assign the most relevant labels from below:</span>
+<span class="s2">Label</span><span class="se">\t</span><span class="s2">Definition</span>
+<span class="s2">asks</span><span class="se">\t</span><span class="s2">Response asks one or several clarifying questions, direct or indirect.</span>
+<span class="s2">answers</span><span class="se">\t</span><span class="s2">Response contains a clear answer.</span>
+<span class="s2">hedges</span><span class="se">\t</span><span class="s2">Response talks about facets that need to be known to provide a good answer.</span>
+<span class="s2">conditions</span><span class="se">\t</span><span class="s2">Response contains answers that come with condition when each would apply.</span>
+<span class="s2">refuses</span><span class="se">\t</span><span class="s2">Reponse is an apology that an answer cannot be provided.</span>
+
+<span class="s2">Only output the labels, separated by commas. Nothing else.</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">annotated</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span>
+    <span class="n">LambdaExtractor</span><span class="p">(</span>
+        <span class="n">GenerateText</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;baseline&quot;</span><span class="p">][</span><span class="s2">&quot;answer_prompt&quot;</span><span class="p">],</span> <span class="n">system_prompt</span><span class="o">=</span><span class="n">rubric</span><span class="p">),</span>
+        <span class="s1">&#39;lambda x: [y.strip() for y in x.split(&quot;,&quot;)]&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span><span class="o">.</span><span class="n">run_on_datatable</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+<span class="n">annotated</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">to_primitives</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[################################################################################]9/9[00:00&lt;00:00, 113.92it/s]
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[[&#39;answers&#39;, &#39;refuses&#39;],
+ [&#39;answers&#39;, &#39;hedges&#39;],
+ [&#39;answers&#39;, &#39;conditions&#39;],
+ [&#39;hedges&#39;, &#39;conditions&#39;],
+ &#39;answers&#39;,
+ [&#39;conditions&#39;, &#39;hedges&#39;],
+ &#39;asks&#39;,
+ [&#39;answers&#39;, &#39;conditions&#39;],
+ [&#39;hedges&#39;, &#39;refuses&#39;]]
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./tutorials"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Installing SAMMO</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#experiment-1-single-turn-responses">Experiment 1: Single-turn responses</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#aside-label-system-responses">Aside: Label system responses</a></li>
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Tobias Schnabel
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

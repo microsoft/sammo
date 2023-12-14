@@ -1,0 +1,995 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>4. Minibatching for Call Efficiency &#8212; SAMMO</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" href="../_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/4_minibatching';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Handling failures" href="special_topics/0_handling_failures.html" />
+    <link rel="prev" title="3. Basic Prompt Engineering" href="3_basic_prompt_engineering.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+  
+
+<a class="navbar-brand logo" href="../docs/index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">SAMMO</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../docs/index.html">
+                    🏠 Overview
+                </a>
+            </li>
+        </ul>
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="0_quickstart.html">🚀 Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">💡 Tutorials</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="1_working_with_data.html">1. Working with Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_using_components.html">2. Using components to write metaprompts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_basic_prompt_engineering.html">3. Basic Prompt Engineering</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">4. Minibatching for Call Efficiency</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Special Topics</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="special_topics/0_handling_failures.html">Handling failures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="special_topics/1_rate_limiting.html">Rate Limiting</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">📖 API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../build/apidocs/sammo/sammo.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo</span></code></a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.base.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.base</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.compactbars.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.compactbars</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.components.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.components</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.data.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.data</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.dataformatters.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.dataformatters</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.extractors.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.extractors</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.instructions.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.instructions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.mutators.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.mutators</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.runners.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.runners</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.scheduler.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.scheduler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.search.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.search</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.search_op.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.search_op</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.store.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.store</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.throttler.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.throttler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.utils.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.utils</span></code></a></li>
+</ul>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../docs/release_history.html">Release History</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://mybinder.org/v2/gh/executablebooks/jupyter-book/master?urlpath=tree/docs/tutorials/4_minibatching.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onBinder"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="../_static/images/logo_binder.svg">
+  </span>
+<span class="btn__text-container">Binder</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book/issues/new?title=Issue%20on%20page%20%2Ftutorials/4_minibatching.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/tutorials/4_minibatching.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Minibatching for Call Efficiency</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#manual-minibatching">4.1. Manual Minibatching</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-the-metaprompt-class">4.2. Using the <code class="docutils literal notranslate"><span class="pre">MetaPrompt</span></code> class</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-the-data-format">4.2.1. Changing the data format</a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="minibatching-for-call-efficiency">
+<h1><span class="section-number">4. </span>Minibatching for Call Efficiency<a class="headerlink" href="#minibatching-for-call-efficiency" title="Permalink to this heading">#</a></h1>
+<p>When annotating data, it is quite wasteful to use one LLM request per example, especially when the instructions are shared.</p>
+<p>Instead, we can use minibatching to improve <em>call efficiency</em>. Let’s repeat the setup from the previous section.</p>
+<div class="cell tag_hide-input docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># %load -r :26 _init.py</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">sammo</span>
+<span class="kn">from</span> <span class="nn">sammo.runners</span> <span class="kn">import</span> <span class="n">OpenAIChat</span>
+<span class="kn">from</span> <span class="nn">sammo.base</span> <span class="kn">import</span> <span class="n">Template</span><span class="p">,</span> <span class="n">EvaluationScore</span>
+<span class="kn">from</span> <span class="nn">sammo.components</span> <span class="kn">import</span> <span class="n">Output</span><span class="p">,</span> <span class="n">GenerateText</span><span class="p">,</span> <span class="n">ForEach</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">sammo.extractors</span> <span class="kn">import</span> <span class="n">ExtractRegex</span>
+<span class="kn">from</span> <span class="nn">sammo.data</span> <span class="kn">import</span> <span class="n">DataTable</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="n">API_CONFIG_FILE</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">()</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span> <span class="o">/</span> <span class="s2">&quot;personal.openai&quot;</span>
+<span class="n">API_CONFIG</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="k">if</span> <span class="n">API_CONFIG_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">API_CONFIG</span> <span class="o">=</span> <span class="n">API_CONFIG_FILE</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">API_CONFIG</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Please set API_CONFIG to {&quot;api_key&quot;: &quot;YOUR_KEY&quot;}&#39;</span><span class="p">)</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="n">sammo</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">)</span>  <span class="c1"># we&#39;re only interested in warnings for now</span>
+
+<span class="n">runner</span> <span class="o">=</span> <span class="n">OpenAIChat</span><span class="p">(</span>
+    <span class="n">model_id</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo-16k&quot;</span><span class="p">,</span>
+    <span class="n">api_config</span><span class="o">=</span><span class="n">API_CONFIG</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="n">CACHE_FILE</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<div class="cell tag_hide-input docutils container">
+<details class="hide above-input">
+<summary aria-label="Toggle hidden content">
+<span class="collapsed">Show code cell source</span>
+<span class="expanded">Hide code cell source</span>
+</summary>
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># %load -s load_data,accuracy _init.py</span>
+<span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span>
+    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://github.com/google/BIG-bench/raw/main/bigbench/benchmark_tasks/implicatures/task.json&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+    <span class="c1"># convert label to single string</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">task</span><span class="p">[</span><span class="s2">&quot;examples&quot;</span><span class="p">]:</span>
+        <span class="n">x</span><span class="p">[</span><span class="s2">&quot;output&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;target_scores&quot;</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;target_scores&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">DataTable</span><span class="o">.</span><span class="n">from_records</span><span class="p">(</span>
+        <span class="n">task</span><span class="p">[</span><span class="s2">&quot;examples&quot;</span><span class="p">],</span>
+        <span class="n">input_fields</span><span class="o">=</span><span class="s2">&quot;input&quot;</span><span class="p">,</span>
+        <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;instructions&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">[</span><span class="s2">&quot;task_prefix&quot;</span><span class="p">]},</span>
+    <span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">accuracy</span><span class="p">(</span><span class="n">y_true</span><span class="p">:</span> <span class="n">DataTable</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">:</span> <span class="n">DataTable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EvaluationScore</span><span class="p">:</span>
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">y_true</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">y_pred</span> <span class="o">=</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">n_correct</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">y_p</span> <span class="o">==</span> <span class="n">y_t</span> <span class="k">for</span> <span class="n">y_p</span><span class="p">,</span> <span class="n">y_t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_true</span><span class="p">)])</span>
+
+    <span class="k">return</span> <span class="n">EvaluationScore</span><span class="p">(</span><span class="n">n_correct</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_true</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</details>
+</div>
+<section id="manual-minibatching">
+<h2><span class="section-number">4.1. </span>Manual Minibatching<a class="headerlink" href="#manual-minibatching" title="Permalink to this heading">#</a></h2>
+<p>To appreciate the convinience of <code class="docutils literal notranslate"><span class="pre">DataFormatters</span></code>, we start by doing within-prompt minibatching ourselves.
+Using the <a class="reference external" href="https://handlebarsjs.com/guide/">handlebars syntax</a>, we loop over all input rows in a minibatch.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">labeling_prompt</span> <span class="o">=</span> <span class="n">GenerateText</span><span class="p">(</span>
+    <span class="n">Template</span><span class="p">(</span>
+        <span class="s2">&quot;Instructions:{{constants.instructions}}</span><span class="se">\n</span><span class="s2">Output labels: yes, no</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;{{#each inputs}}Input: {{this}}{{/each}}</span><span class="se">\n</span><span class="s2">Output:&quot;</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The only other changes we need to make is to specify the minibatch size in the Output component and also make sure the output gets split into lines.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">labeling_outputter</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">labeling_prompt</span><span class="p">,</span> <span class="n">minibatch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">mydata</span> <span class="o">=</span> <span class="n">load_data</span><span class="p">()</span>
+<span class="n">sample</span> <span class="o">=</span> <span class="n">mydata</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">labeling_outputter</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Exception: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[##################################################################################]1/1[00:00&lt;00:00, 62.50it/s]
+
+Exception: Minibatch results do not have right length (need: 10, got: 1)
+</pre></div>
+</div>
+</div>
+</div>
+<p>Oh, no - there is something wrong with the minibatch results. The number of answers we get from a single LLM call need to be aligned with all the input rows which is where we fail.</p>
+<p>Going back to the prompt, we realize that we forgot to extract all valid answers from the <code class="docutils literal notranslate"><span class="pre">GenerateText</span></code> call! Let’s fix that.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">labeling_outputter</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span>
+    <span class="n">ExtractRegex</span><span class="p">(</span><span class="n">labeling_prompt</span><span class="p">,</span> <span class="s2">&quot;(?i)yes|no&quot;</span><span class="p">),</span> <span class="n">minibatch_size</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">labeling_outputter</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="n">result</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[###################################################################################]1/1[00:00&lt;??:??, 0.00it/s]
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>+--------------------------------------------------------------+----------+
+| input                                                        | output   |
++==============================================================+==========+
+| Speaker 1: &#39;You do this often?&#39; Speaker 2: &#39;It&#39;s my first    | yes      |
+| time.&#39;                                                       |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Are you trying to make me mad?&#39; Speaker 2: &#39;I&#39;m  | no       |
+| just saying, I&#39;d understand if you were upset. &#39;             |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;You want answers?!&#39; Speaker 2: &#39;I want the       | no       |
+| truth.&#39;                                                      |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Are you able to carry the box?&#39; Speaker 2: &#39;It   | yes      |
+| is as light as a feather.&#39;                                   |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Is it hot outside?&#39; Speaker 2: &#39;You could fry an | no       |
+| egg on the sidewalk.&#39;                                        |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Should we repay you?&#39; Speaker 2: &#39;There is no    | no       |
+| charge for awesomeness, or attractiveness.&#39;                  |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;I wonder, Bob, if you can handle my car?&#39;        | no       |
+| Speaker 2: &#39;It&#39;s an ordinary six cylinder.&#39;                  |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Did you order the code red?&#39; Speaker 2: &#39;You&#39;re  | yes      |
+| goddamn right.&#39;                                              |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;You&#39;ve seen rain before... right?&#39; Speaker 2:    | no       |
+| &#39;We don&#39;t get out much.&#39;                                     |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Does anyone know how to pick a lock?&#39; Speaker 2: | yes      |
+| &#39;Sure. Picking locks is my thing.&#39;                           |          |
++--------------------------------------------------------------+----------+
+Constants: {&#39;instructions&#39;: &quot;Does Speaker 2&#39;s answer mean yes or no? &quot;}
+</pre></div>
+</div>
+</div>
+</div>
+<p>Nice! With a single LLM call, we now annotated 10 examples! It was, however, a bit annoying to have to manually format the minibatches. Luckily, <code class="docutils literal notranslate"><span class="pre">SAMMO</span></code> provides a <code class="docutils literal notranslate"><span class="pre">MetaTemplate</span></code> class for common data annotation tasks that simplifies the set-up considerably.</p>
+</section>
+<section id="using-the-metaprompt-class">
+<h2><span class="section-number">4.2. </span>Using the <code class="docutils literal notranslate"><span class="pre">MetaPrompt</span></code> class<a class="headerlink" href="#using-the-metaprompt-class" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MetaPrompt</span></code> class takes a nested list of instructions, an argument specifying how instructions are rendered and a <code class="docutils literal notranslate"><span class="pre">DataFormatter</span></code> instance that is shared for in-context examples and input examples.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sammo.instructions</span> <span class="kn">import</span> <span class="n">MetaPrompt</span><span class="p">,</span> <span class="n">Section</span><span class="p">,</span> <span class="n">Paragraph</span><span class="p">,</span> <span class="n">InputData</span><span class="p">,</span> <span class="n">FewshotExamples</span>
+<span class="kn">from</span> <span class="nn">sammo.dataformatters</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QuestionAnswerFormatter</span><span class="p">,</span>
+    <span class="n">JSONDataFormatter</span>
+<span class="p">)</span>
+
+<span class="n">mprompt</span> <span class="o">=</span> <span class="n">MetaPrompt</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">Section</span><span class="p">(</span><span class="s2">&quot;Instructions&quot;</span><span class="p">,</span> <span class="n">mydata</span><span class="o">.</span><span class="n">constants</span><span class="p">[</span><span class="s2">&quot;instructions&quot;</span><span class="p">]),</span>
+        <span class="n">Section</span><span class="p">(</span><span class="s2">&quot;Examples&quot;</span><span class="p">,</span> <span class="n">FewshotExamples</span><span class="p">(</span><span class="n">mydata</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">43</span><span class="p">))),</span>
+        <span class="n">Paragraph</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Output labels: yes, no&quot;</span><span class="p">),</span>
+        <span class="n">Paragraph</span><span class="p">(</span><span class="n">InputData</span><span class="p">()),</span>
+    <span class="p">],</span>
+    <span class="n">render_as</span><span class="o">=</span><span class="s2">&quot;markdown&quot;</span><span class="p">,</span>
+    <span class="n">data_formatter</span><span class="o">=</span><span class="n">QuestionAnswerFormatter</span><span class="p">([</span><span class="s2">&quot;yes&quot;</span><span class="p">,</span> <span class="s2">&quot;no&quot;</span><span class="p">]),</span>
+<span class="p">)</span><span class="o">.</span><span class="n">with_extractor</span><span class="p">(</span><span class="s2">&quot;empty_result&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We have now structured our labeling task into a section and a few paragraphs. The <code class="docutils literal notranslate"><span class="pre">DataFormatter</span></code> class does all the data formatting for us, and calling <code class="docutils literal notranslate"><span class="pre">with_extractor()</span></code> wraps the response with the right extractor class to match our data formatter. We have also added a section with fewshot (incontext) examples to show the model how the output format looks.</p>
+<p>We can just look at the current metaprompt to see what was generated:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">mprompt</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>ExtractRegex(
+  child = GenerateText(
+    child = MetaPrompt(
+      structure = [
+        0 : Section(
+          name = &#39;Instructions&#39;,
+          content = &#39;Does Speaker 2&#39;s answer mean yes or no? &#39;,
+          id = None
+        ),
+        1 : Section(
+          name = &#39;Examples&#39;,
+          content = FewshotExamples(
+            data = +--------------------------------------------------------------+----------+
+| input                                                        | output   |
++==============================================================+==========+
+| Speaker 1: &#39;Should I bring my umbrella?&#39; Speaker 2: &#39;Better  | yes      |
+| safe than sorry.&#39;                                            |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Do you have a girl worth fighting for?&#39; Speaker  | no       |
+| 2: &#39;Wish that I had.&#39;                                        |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Do you think I should attend the interview?&#39;     | yes      |
+| Speaker 2: &#39;Do you want to be a failure for the rest of your |          |
+| life?&#39;                                                       |          |
++--------------------------------------------------------------+----------+
+Constants: {&#39;instructions&#39;: &quot;Does Speaker 2&#39;s answer mean yes or no? &quot;},
+            n_examples = None,
+            name = None
+          ),
+          id = None
+        ),
+        2 : Paragraph(
+          content = &#39;
+Output labels: yes, no&#39;,
+          id = None
+        ),
+        3 : Paragraph(
+          content = InputData(
+            id_offset = 0,
+            name = None
+          ),
+          id = None
+        )
+      ],
+      render_as = &#39;markdown&#39;,
+      data_formatter = QuestionAnswerFormatter(
+        all_labels = [
+          0 : &#39;yes&#39;,
+          1 : &#39;no&#39;
+        ]
+      ),
+      name = None,
+      seed = 0
+    ),
+    name = None,
+    system_prompt = None,
+    history = None,
+    seed = 0,
+    randomness = 0,
+    max_tokens = None,
+    on_error = &#39;raise&#39;
+  ),
+  regex = &#39;^A[^:]*:\s*([^\n]*)&#39;,
+  max_matches = None,
+  strip_whitespaces = True
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can see that the output from <code class="docutils literal notranslate"><span class="pre">GenerateText</span></code> gets parsed by <code class="docutils literal notranslate"><span class="pre">ExtractRegex</span></code>. Let’s run it on our data.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">mprompt</span><span class="p">,</span> <span class="n">minibatch_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">on_error</span><span class="o">=</span><span class="s2">&quot;empty_result&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="n">runner</span><span class="p">,</span> <span class="n">sample</span>
+<span class="p">)</span>
+<span class="n">result</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[#################################################################################]2/2[00:00&lt;00:00, 125.00it/s]
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>+--------------------------------------------------------------+----------+
+| input                                                        | output   |
++==============================================================+==========+
+| Speaker 1: &#39;You do this often?&#39; Speaker 2: &#39;It&#39;s my first    | no       |
+| time.&#39;                                                       |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Are you trying to make me mad?&#39; Speaker 2: &#39;I&#39;m  | no       |
+| just saying, I&#39;d understand if you were upset. &#39;             |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;You want answers?!&#39; Speaker 2: &#39;I want the       | yes      |
+| truth.&#39;                                                      |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Are you able to carry the box?&#39; Speaker 2: &#39;It   | yes      |
+| is as light as a feather.&#39;                                   |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Is it hot outside?&#39; Speaker 2: &#39;You could fry an | yes      |
+| egg on the sidewalk.&#39;                                        |          |
++--------------------------------------------------------------+----------+
+Constants: {&#39;instructions&#39;: &quot;Does Speaker 2&#39;s answer mean yes or no? &quot;}
+</pre></div>
+</div>
+</div>
+</div>
+<p>Let’s also look at what an actual prompt looked like:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">llm_requests</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span># Instructions
+Does Speaker 2&#39;s answer mean yes or no? 
+
+# Examples
+Q[0]: Speaker 1: &#39;Should I bring my umbrella?&#39; Speaker 2: &#39;Better safe than sorry.&#39;
+A[0]: yes
+
+Q[1]: Speaker 1: &#39;Do you have a girl worth fighting for?&#39; Speaker 2: &#39;Wish that I had.&#39;
+A[1]: no
+
+Q[2]: Speaker 1: &#39;Do you think I should attend the interview?&#39; Speaker 2: &#39;Do you want to be a failure for the rest of your life?&#39;
+A[2]: yes
+
+
+
+Output labels: yes, no
+
+
+Q[0]: Speaker 1: &#39;You do this often?&#39; Speaker 2: &#39;It&#39;s my first time.&#39;
+
+Q[1]: Speaker 1: &#39;Are you trying to make me mad?&#39; Speaker 2: &#39;I&#39;m just saying, I&#39;d understand if you were upset. &#39;
+
+Q[2]: Speaker 1: &#39;You want answers?!&#39; Speaker 2: &#39;I want the truth.&#39;
+
+Q[3]: Speaker 1: &#39;Are you able to carry the box?&#39; Speaker 2: &#39;It is as light as a feather.&#39;
+
+Q[4]: Speaker 1: &#39;Is it hot outside?&#39; Speaker 2: &#39;You could fry an egg on the sidewalk.&#39;
+</pre></div>
+</div>
+</div>
+</div>
+<section id="changing-the-data-format">
+<h3><span class="section-number">4.2.1. </span>Changing the data format<a class="headerlink" href="#changing-the-data-format" title="Permalink to this heading">#</a></h3>
+<p>How about using JSON instead of this line-by-line format?</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">modified_mprompt</span> <span class="o">=</span> <span class="n">MetaPrompt</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">Section</span><span class="p">(</span><span class="s2">&quot;Instructions&quot;</span><span class="p">,</span> <span class="n">mydata</span><span class="o">.</span><span class="n">constants</span><span class="p">[</span><span class="s2">&quot;instructions&quot;</span><span class="p">]),</span>
+        <span class="n">Section</span><span class="p">(</span><span class="s2">&quot;Examples&quot;</span><span class="p">,</span> <span class="n">FewshotExamples</span><span class="p">(</span><span class="n">mydata</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">43</span><span class="p">))),</span>
+        <span class="n">Paragraph</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Output labels: yes, no&quot;</span><span class="p">),</span>
+        <span class="n">Paragraph</span><span class="p">(</span><span class="n">InputData</span><span class="p">()),</span>
+    <span class="p">],</span>
+    <span class="n">render_as</span><span class="o">=</span><span class="s2">&quot;markdown&quot;</span><span class="p">,</span>
+    <span class="n">data_formatter</span><span class="o">=</span><span class="n">JSONDataFormatter</span><span class="p">(),</span>  <span class="c1"># &lt;-- changed</span>
+<span class="p">)</span><span class="o">.</span><span class="n">with_extractor</span><span class="p">(</span><span class="s2">&quot;empty_result&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Voilà! Let’s run it on the data.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span>
+    <span class="n">modified_mprompt</span><span class="p">,</span> <span class="n">minibatch_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">on_error</span><span class="o">=</span><span class="s2">&quot;empty_result&quot;</span>
+<span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span>
+<span class="n">result</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[###################################################################################]2/2[00:00&lt;??:??, 0.00it/s]
+</pre></div>
+</div>
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>+--------------------------------------------------------------+----------+
+| input                                                        | output   |
++==============================================================+==========+
+| Speaker 1: &#39;You do this often?&#39; Speaker 2: &#39;It&#39;s my first    | no       |
+| time.&#39;                                                       |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Are you trying to make me mad?&#39; Speaker 2: &#39;I&#39;m  | no       |
+| just saying, I&#39;d understand if you were upset. &#39;             |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;You want answers?!&#39; Speaker 2: &#39;I want the       | no       |
+| truth.&#39;                                                      |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Are you able to carry the box?&#39; Speaker 2: &#39;It   | no       |
+| is as light as a feather.&#39;                                   |          |
++--------------------------------------------------------------+----------+
+| Speaker 1: &#39;Is it hot outside?&#39; Speaker 2: &#39;You could fry an | no       |
+| egg on the sidewalk.&#39;                                        |          |
++--------------------------------------------------------------+----------+
+Constants: {&#39;instructions&#39;: &quot;Does Speaker 2&#39;s answer mean yes or no? &quot;}
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">llm_requests</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;content&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span># Instructions
+Does Speaker 2&#39;s answer mean yes or no? 
+
+# Examples
+[{&quot;id&quot;: 0, &quot;input&quot;: &quot;Speaker 1: &#39;Should I bring my umbrella?&#39; Speaker 2: &#39;Better safe than sorry.&#39;&quot;, &quot;output&quot;: &quot;yes&quot;}, {&quot;id&quot;: 1, &quot;input&quot;: &quot;Speaker 1: &#39;Do you have a girl worth fighting for?&#39; Speaker 2: &#39;Wish that I had.&#39;&quot;, &quot;output&quot;: &quot;no&quot;}, {&quot;id&quot;: 2, &quot;input&quot;: &quot;Speaker 1: &#39;Do you think I should attend the interview?&#39; Speaker 2: &#39;Do you want to be a failure for the rest of your life?&#39;&quot;, &quot;output&quot;: &quot;yes&quot;}]
+
+
+Output labels: yes, no
+
+
+[{&quot;id&quot;: 0, &quot;input&quot;: &quot;Speaker 1: &#39;You do this often?&#39; Speaker 2: &#39;It&#39;s my first time.&#39;&quot;}, {&quot;id&quot;: 1, &quot;input&quot;: &quot;Speaker 1: &#39;Are you trying to make me mad?&#39; Speaker 2: &#39;I&#39;m just saying, I&#39;d understand if you were upset. &#39;&quot;}, {&quot;id&quot;: 2, &quot;input&quot;: &quot;Speaker 1: &#39;You want answers?!&#39; Speaker 2: &#39;I want the truth.&#39;&quot;}, {&quot;id&quot;: 3, &quot;input&quot;: &quot;Speaker 1: &#39;Are you able to carry the box?&#39; Speaker 2: &#39;It is as light as a feather.&#39;&quot;}, {&quot;id&quot;: 4, &quot;input&quot;: &quot;Speaker 1: &#39;Is it hot outside?&#39; Speaker 2: &#39;You could fry an egg on the sidewalk.&#39;&quot;}]
+</pre></div>
+</div>
+</div>
+</div>
+<p>This is the convinience of using the <code class="docutils literal notranslate"><span class="pre">MetaPrompt</span></code> class!</p>
+</section>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./tutorials"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="3_basic_prompt_engineering.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title"><span class="section-number">3. </span>Basic Prompt Engineering</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="special_topics/0_handling_failures.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Handling failures</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#manual-minibatching">4.1. Manual Minibatching</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-the-metaprompt-class">4.2. Using the <code class="docutils literal notranslate"><span class="pre">MetaPrompt</span></code> class</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-the-data-format">4.2.1. Changing the data format</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Tobias Schnabel
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

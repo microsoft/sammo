@@ -1,0 +1,728 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>🚀 Quick Start &#8212; SAMMO</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" href="../_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tutorials/0_quickstart';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1. Working with Data" href="1_working_with_data.html" />
+    <link rel="prev" title="🏠 Overview" href="../docs/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+  
+
+<a class="navbar-brand logo" href="../docs/index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">SAMMO</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../docs/index.html">
+                    🏠 Overview
+                </a>
+            </li>
+        </ul>
+        <ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">🚀 Quick Start</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">💡 Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="1_working_with_data.html">1. Working with Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_using_components.html">2. Using components to write metaprompts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_basic_prompt_engineering.html">3. Basic Prompt Engineering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_minibatching.html">4. Minibatching for Call Efficiency</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Special Topics</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="special_topics/0_handling_failures.html">Handling failures</a></li>
+<li class="toctree-l1"><a class="reference internal" href="special_topics/1_rate_limiting.html">Rate Limiting</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">📖 API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../build/apidocs/sammo/sammo.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo</span></code></a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/><label class="toctree-toggle" for="toctree-checkbox-1"><i class="fa-solid fa-chevron-down"></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.base.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.base</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.compactbars.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.compactbars</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.components.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.components</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.data.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.data</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.dataformatters.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.dataformatters</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.extractors.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.extractors</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.instructions.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.instructions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.mutators.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.mutators</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.runners.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.runners</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.scheduler.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.scheduler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.search.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.search</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.search_op.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.search_op</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.store.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.store</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.throttler.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.throttler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../build/apidocs/sammo/sammo.utils.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sammo.utils</span></code></a></li>
+</ul>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../docs/release_history.html">Release History</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://mybinder.org/v2/gh/executablebooks/jupyter-book/master?urlpath=tree/docs/tutorials/0_quickstart.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch onBinder"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img src="../_static/images/logo_binder.svg">
+  </span>
+<span class="btn__text-container">Binder</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book/issues/new?title=Issue%20on%20page%20%2Ftutorials/0_quickstart.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/tutorials/0_quickstart.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script>
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>🚀 Quick Start</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#specifying-a-metaprompt">Specifying a metaprompt</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recap">Recap</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="quick-start">
+<h1>🚀 Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this heading">#</a></h1>
+<p>To illustrate some of the core concepts, let’s use SAMMO to generate content for a travel website.</p>
+<p>To run this example, you need API credentials to an OpenAI API compatible model.</p>
+<p>Below, we will use ChatGPT-3.5 and also cache any requests made.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># %load _init.py</span>
+<span class="kn">import</span> <span class="nn">pathlib</span>
+<span class="kn">import</span> <span class="nn">sammo</span>
+<span class="kn">from</span> <span class="nn">sammo.runners</span> <span class="kn">import</span> <span class="n">OpenAIChat</span>
+<span class="kn">from</span> <span class="nn">sammo.base</span> <span class="kn">import</span> <span class="n">Template</span>
+<span class="kn">from</span> <span class="nn">sammo.components</span> <span class="kn">import</span> <span class="n">Output</span><span class="p">,</span> <span class="n">GenerateText</span><span class="p">,</span> <span class="n">ForEach</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">sammo.extractors</span> <span class="kn">import</span> <span class="n">ExtractRegex</span>
+
+<span class="n">API_CONFIG_FILE</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">()</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span> <span class="o">/</span> <span class="s2">&quot;personal.openai&quot;</span>
+<span class="n">API_CONFIG</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="k">if</span> <span class="n">API_CONFIG_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">API_CONFIG</span> <span class="o">=</span> <span class="n">API_CONFIG_FILE</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">API_CONFIG</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Please set API_CONFIG to {&quot;api_key&quot;: &quot;YOUR_KEY&quot;}&#39;</span><span class="p">)</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="n">sammo</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">)</span>  <span class="c1"># we&#39;re only interested in warnings for now</span>
+
+<span class="n">runner</span> <span class="o">=</span> <span class="n">OpenAIChat</span><span class="p">(</span>
+    <span class="n">model_id</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo-16k&quot;</span><span class="p">,</span>
+    <span class="n">api_config</span><span class="o">=</span><span class="n">API_CONFIG</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="n">CACHE_FILE</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>How about a quick ‘Hello World?’?</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Output</span><span class="p">(</span><span class="n">GenerateText</span><span class="p">(</span><span class="s2">&quot;Hello World!&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">runner</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>+---------+------------------------------------+
+| input   | output                             |
++=========+====================================+
+| None    | Hello! How can I assist you today? |
++---------+------------------------------------+
+Constants: None
+</pre></div>
+</div>
+</div>
+</div>
+<p>Calls via <code class="docutils literal notranslate"><span class="pre">.run()</span></code> always return a DataTable which keeps track of the input and output. It might be a little confusing to see an empty input field, but this is because we did not specify any actual input data. More on this in “Working with Data”.</p>
+<section id="specifying-a-metaprompt">
+<h2>Specifying a metaprompt<a class="headerlink" href="#specifying-a-metaprompt" title="Permalink to this heading">#</a></h2>
+<p>Let’s say we have a list of countries. For each country, we want the top reason to visit as well as when to visit.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">COUNTRIES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Switzerland&quot;</span><span class="p">,</span> <span class="s2">&quot;Morocco&quot;</span><span class="p">,</span> <span class="s2">&quot;Tanzania&quot;</span><span class="p">,</span> <span class="s2">&quot;Indonesia&quot;</span><span class="p">,</span> <span class="s2">&quot;Peru&quot;</span><span class="p">]</span>
+
+<span class="n">reason_to_visit</span> <span class="o">=</span> <span class="n">GenerateText</span><span class="p">(</span>
+    <span class="n">Template</span><span class="p">(</span><span class="s2">&quot;What is the top reason to visit {{input}} in one sentence?&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">when_to_visit</span> <span class="o">=</span> <span class="n">GenerateText</span><span class="p">(</span>
+    <span class="n">Template</span><span class="p">(</span>
+        <span class="s2">&quot;Which season is the best time to visit {{input}}? Answer in one sentence.&quot;</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">country_pages</span> <span class="o">=</span> <span class="n">Template</span><span class="p">(</span>
+    <span class="s2">&quot;# {{input}}</span><span class="se">\n</span><span class="s2">{{reason}}</span><span class="se">\n\n</span><span class="s2">## When to Visit</span><span class="se">\n</span><span class="s2">{{when}}&quot;</span><span class="p">,</span>
+    <span class="n">reason</span><span class="o">=</span><span class="n">reason_to_visit</span><span class="p">,</span>
+    <span class="n">when</span><span class="o">=</span><span class="n">when_to_visit</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">Output</span><span class="p">(</span><span class="n">country_pages</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">COUNTRIES</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">max_col_width</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">max_cell_length</span><span class="o">=</span><span class="mi">300</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>minibatches[###################################################################################]5/5[00:00&lt;??:??, 0.00it/s]
++-------------+------------------------------------------------------------------------------------------------------+
+| input       | output                                                                                               |
++=============+======================================================================================================+
+| Switzerland | # Switzerland The top reason to visit Switzerland is to experience its breathtaking landscapes, from |
+|             | majestic mountains to pristine lakes.  ## When to Visit The best time to visit Switzerland is during |
+|             | the summer season (June to August) when the weather is pleasant and outdoor activities are abun...   |
++-------------+------------------------------------------------------------------------------------------------------+
+| Morocco     | # Morocco The top reason to visit Morocco is to immerse yourself in its rich and diverse culture,    |
+|             | blending Arab, Berber, and European influences.  ## When to Visit The best time to visit Morocco is  |
+|             | during spring (March to May) when the weather is pleasant and the landscapes are lush.               |
++-------------+------------------------------------------------------------------------------------------------------+
+| Tanzania    | # Tanzania The top reason to visit Tanzania is to witness the breathtaking beauty of the Serengeti   |
+|             | National Park and experience the awe-inspiring Great Migration.  ## When to Visit The best time to   |
+|             | visit Tanzania is during the dry season, from June to October, when wildlife viewing is at its peak. |
++-------------+------------------------------------------------------------------------------------------------------+
+| Indonesia   | # Indonesia The top reason to visit Indonesia is its breathtaking natural beauty, from stunning      |
+|             | beaches and lush rainforests to active volcanoes and diverse wildlife.  ## When to Visit The best    |
+|             | time to visit Indonesia is during the dry season, which is from May to September.                    |
++-------------+------------------------------------------------------------------------------------------------------+
+| Peru        | # Peru The top reason to visit Peru is to experience the awe-inspiring ancient ruins of Machu        |
+|             | Picchu.  ## When to Visit The best time to visit Peru is during the dry season, which is from May to |
+|             | September.                                                                                           |
++-------------+------------------------------------------------------------------------------------------------------+
+Constants: None
+</pre></div>
+</div>
+</div>
+</div>
+<p>Great, we just finished our travel blog in less than five minutes!</p>
+<p>Under the hood, <code class="docutils literal notranslate"><span class="pre">country_pages</span></code> is a graph of nested <code class="docutils literal notranslate"><span class="pre">Components</span></code> and gets called from the inside out. We refer to these call graphs as <em>metaprompts</em> because they are abstract away input data (as opposed to <em>prompts</em> which are concrete text strings sent to an LLM).</p>
+<p>We can see the metaprompt structure by simply printing it:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">country_pages</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Template(
+  template_text = &#39;# {{input}}
+{{reason}}
+
+## When to Visit
+{{when}}&#39;,
+  name = None,
+  reason = GenerateText(
+    child = Template(
+      template_text = &#39;What is the top reason to visit {{input}} in one sentence?&#39;,
+      name = None
+    ),
+    name = None,
+    system_prompt = None,
+    history = None,
+    seed = 0,
+    randomness = 0,
+    max_tokens = None,
+    on_error = &#39;raise&#39;
+  ),
+  when = GenerateText(
+    child = Template(
+      template_text = &#39;Which season is the best time to visit {{input}}? Answer in one sentence.&#39;,
+      name = None
+    ),
+    name = None,
+    system_prompt = None,
+    history = None,
+    seed = 0,
+    randomness = 0,
+    max_tokens = None,
+    on_error = &#39;raise&#39;
+  )
+)
+</pre></div>
+</div>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">SAMMO</span></code> also knows which operations can be done in parallel and schedules things accordingly. You can specify call limits the <code class="docutils literal notranslate"><span class="pre">Runner</span></code> instance (more on this in the section on minibatching).</p>
+</section>
+<section id="recap">
+<h2>Recap<a class="headerlink" href="#recap" title="Permalink to this heading">#</a></h2>
+<p>Let’s talk about some of the key concepts from SAMMO we have used:</p>
+<ol class="arabic simple">
+<li><p>We constructed a <strong>metaprompt</strong> — a dynamic prompt that is re-used for different inputs.</p></li>
+<li><p>This metaprompt has a structure which was constructed by nesting <strong>components</strong> from SAMMO. A helpful analogy might be to think of how we construct neural architectures.</p></li>
+<li><p>To get the <strong>output</strong> for a metaprompt, we need to wrap the metaprompt in an Output component which returns a list of Result objects.</p></li>
+<li><p>SAMMO <strong>parallelized</strong> execution for us on the input data — no extra work was needed!</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./tutorials"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../docs/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">🏠 Overview</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="1_working_with_data.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title"><span class="section-number">1. </span>Working with Data</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#specifying-a-metaprompt">Specifying a metaprompt</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recap">Recap</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Tobias Schnabel
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
