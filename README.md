@@ -1,14 +1,15 @@
-# SAMMO
+# SAMMO ([📘User Guide](https://microsoft.github.io/sammo/docs/))
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sammo.svg)](https://pypi.python.org/pypi/sammo)
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
-![Overview](docs/overview.png)
+![Overview](https://microsoft.github.io/sammo/_images/overview.png)
 
+## How to Get Started
+Go to the [user guide](https://microsoft.github.io/sammo/docs/) for examples, how-tos, and API reference.
 <!--start-->
-## Installation
 
 ```bash
 pip install sammo
@@ -81,4 +82,4 @@ provided by the bot. You will only need to do this once across all repos using o
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact `opencode@microsoft.com <mailto:opencode@microsoft.com>` with any additional questions or comments.
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com>) with any additional questions or comments.

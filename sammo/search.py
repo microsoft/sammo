@@ -138,7 +138,7 @@ class Optimizer:
             self._state["priors"] = copy.deepcopy(self._action_stats)
 
     def show_report(self):
-        if self._state is None:
+        if self._state is None or not self._state["fit"]:
             raise ValueError("Need to fit model first.")
         print("")
         print(f"Fitting log:")

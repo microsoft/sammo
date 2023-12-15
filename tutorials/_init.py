@@ -40,8 +40,8 @@ def load_data(
 
 
 def accuracy(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
-    y_true = y_true.outputs.values
-    y_pred = y_pred.outputs.values
+    y_true = y_true.outputs.normalized_values()
+    y_pred = y_pred.outputs.normalized_values()
     n_correct = sum([y_p == y_t for y_p, y_t in zip(y_pred, y_true)])
 
     return EvaluationScore(n_correct / len(y_true))
