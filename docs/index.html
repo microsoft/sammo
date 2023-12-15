@@ -169,6 +169,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/2_using_components.html">2. Using components to write metaprompts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/3_basic_prompt_engineering.html">3. Basic Prompt Engineering</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/4_minibatching.html">4. Minibatching for Call Efficiency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/5_instruction_optimization.html">5. Instruction Optimization</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Special Topics</span></p>
 <ul class="nav bd-sidenav">
@@ -252,7 +253,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="https://github.com/executablebooks/jupyter-book" target="_blank"
+      <li><a href="https://github.com/microsoft/sammo" target="_blank"
    class="btn btn-sm btn-source-repository-button dropdown-item"
    title="Source repository"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -269,7 +270,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="https://github.com/executablebooks/jupyter-book/issues/new?title=Issue%20on%20page%20%2Fdocs/index.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/microsoft/sammo/issues/new?title=Issue%20on%20page%20%2Fdocs/index.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -391,10 +392,8 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#use-cases">Use Cases</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#licence">Licence</a></li>
 </ul>
             </nav>
         </div>
@@ -410,12 +409,9 @@ document.write(`
 <h1>🏠 Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h1>
 <p>A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).</p>
 <img alt="overview" class="bg-primary mb-1 align-center" src="../_images/overview.png" />
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>sammo
 </pre></div>
 </div>
-</section>
 <section id="use-cases">
 <h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this heading">#</a></h2>
 <p>SAMMO is designed to support</p>
@@ -463,10 +459,6 @@ and rate-limiting out-of-the-box so you can run many queries in parallel and at 
 <span class="nb">print</span><span class="p">(</span><span class="n">Output</span><span class="p">(</span><span class="n">joint_answer</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">questions</span><span class="p">))</span>
 </pre></div>
 </div>
-</section>
-<section id="licence">
-<h2>Licence<a class="headerlink" href="#licence" title="Permalink to this heading">#</a></h2>
-<p>This project is licensed under <a class="reference external" href="https://choosealicense.com/licenses/mit/">MIT</a>.</p>
 </section>
 <div class="toctree-wrapper compound">
 </div>
@@ -534,10 +526,8 @@ and rate-limiting out-of-the-box so you can run many queries in parallel and at 
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#use-cases">Use Cases</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example">Example</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#licence">Licence</a></li>
 </ul>
   </nav></div>
 

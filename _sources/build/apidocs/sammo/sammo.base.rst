@@ -120,8 +120,9 @@ API
 
       .. autodoc2-docstring:: sammo.base.Result.to_json
 
-   .. py:method:: bfs(match_condition: typing.Callable)
+   .. py:method:: bfs(start, match_condition: typing.Callable)
       :canonical: sammo.base.Result.bfs
+      :classmethod:
 
       .. autodoc2-docstring:: sammo.base.Result.bfs
 
