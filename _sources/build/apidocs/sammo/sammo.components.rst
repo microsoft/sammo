@@ -60,7 +60,7 @@ API
 
    .. autodoc2-docstring:: sammo.components.Output.__init__
 
-   .. py:method:: run(runner: sammo.base.Runner, data: sammo.data.DataTable | list | None = None, progress_callback: collections.abc.Callable | bool = True, priority: int = 0, on_error: typing.Literal[raise, empty_result, backoff] = 'raise') -> sammo.data.DataTable
+   .. py:method:: run(runner: sammo.base.Runner, data: sammo.data.DataTable | list | None = None, progress_callback: typing.Callable | bool = True, priority: int = 0, on_error: typing.Literal[raise, empty_result, backoff] = 'raise') -> sammo.data.DataTable
       :canonical: sammo.components.Output.run
 
       .. autodoc2-docstring:: sammo.components.Output.run
@@ -70,7 +70,7 @@ API
 
       .. autodoc2-docstring:: sammo.components.Output.n_minibatches
 
-   .. py:method:: arun(runner: sammo.base.Runner, data: sammo.data.DataTable | list | None = None, progress_callback: collections.abc.Callable | bool = True, priority: int = 0, on_error: typing.Literal[raise, empty_result, backoff] = 'raise')
+   .. py:method:: arun(runner: sammo.base.Runner, data: sammo.data.DataTable | list | None = None, progress_callback: typing.Callable | bool = True, priority: int = 0, on_error: typing.Literal[raise, empty_result, backoff] = 'raise')
       :canonical: sammo.components.Output.arun
       :async:
 
