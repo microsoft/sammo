@@ -66,7 +66,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Handling failures" href="special_topics/0_handling_failures.html" />
-    <link rel="prev" title="4. Minibatching for Call Efficiency" href="4_minibatching-Copy1.html" />
+    <link rel="prev" title="4. Minibatching for Call Efficiency" href="4_minibatching.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -169,7 +169,7 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="1_working_with_data.html">1. Working with Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="2_using_components.html">2. Using components to write metaprompts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="3_basic_prompt_engineering.html">3. Basic Prompt Engineering</a></li>
-<li class="toctree-l1"><a class="reference internal" href="4_minibatching-Copy1.html">4. Minibatching for Call Efficiency</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_minibatching.html">4. Minibatching for Call Efficiency</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">5. Instruction Optimization</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Special Topics</span></p>
@@ -456,7 +456,7 @@ document.write(`
 <span class="expanded">Hide code cell source</span>
 </summary>
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># %load -r :26 _init.py</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># %load -r :27 _init.py</span>
 <span class="kn">import</span> <span class="nn">pathlib</span>
 <span class="kn">import</span> <span class="nn">sammo</span>
 <span class="kn">from</span> <span class="nn">sammo.runners</span> <span class="kn">import</span> <span class="n">OpenAIChat</span>
@@ -466,6 +466,7 @@ document.write(`
 <span class="kn">from</span> <span class="nn">sammo.data</span> <span class="kn">import</span> <span class="n">DataTable</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="n">API_CONFIG_FILE</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">()</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span> <span class="o">/</span> <span class="s2">&quot;personal.openai&quot;</span>
 <span class="n">API_CONFIG</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
@@ -479,8 +480,7 @@ document.write(`
 <span class="n">runner</span> <span class="o">=</span> <span class="n">OpenAIChat</span><span class="p">(</span>
     <span class="n">model_id</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo-16k&quot;</span><span class="p">,</span>
     <span class="n">api_config</span><span class="o">=</span><span class="n">API_CONFIG</span><span class="p">,</span>
-    <span class="n">cache</span><span class="o">=</span><span class="n">CACHE_FILE</span><span class="p">,</span>
-    <span class="n">rate_limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">cache</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CACHE_FILE&quot;</span><span class="p">,</span> <span class="s2">&quot;cache.tsv&quot;</span><span class="p">),</span>
     <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -782,7 +782,7 @@ InduceInstructions  {&#39;chosen&#39;: 10, &#39;improved&#39;: 1}
                   <!-- Previous / next buttons -->
 <div class="prev-next-area">
     <a class="left-prev"
-       href="4_minibatching-Copy1.html"
+       href="4_minibatching.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
