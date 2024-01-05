@@ -14,8 +14,8 @@ if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
     from typing import Self
-from collections.abc import Callable
-from typing import Iterator
+
+from typing import Iterator, Callable
 
 import more_itertools
 import pyglove as pg

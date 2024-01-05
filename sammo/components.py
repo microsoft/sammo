@@ -2,7 +2,7 @@ import asyncio
 import logging
 import math
 import warnings
-from collections.abc import Callable
+from typing import Callable
 from frozendict import frozendict
 
 import beartype

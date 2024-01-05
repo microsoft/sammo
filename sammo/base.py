@@ -6,8 +6,9 @@ import sys
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
-    from typing import Self, Callable
-
+    from typing import Self
+    
+from typing import Callable
 from frozendict import frozendict
 
 import pyglove as pg
