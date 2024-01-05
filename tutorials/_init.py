@@ -7,6 +7,7 @@ from sammo.extractors import ExtractRegex
 from sammo.data import DataTable
 import json
 import requests
+import os
 
 API_CONFIG_FILE = pathlib.Path().cwd().parent / "config" / "personal.openai"
 API_CONFIG = ""
@@ -20,7 +21,7 @@ _ = sammo.setup_logger("WARNING")  # we're only interested in warnings for now
 runner = OpenAIChat(
     model_id="gpt-3.5-turbo-16k",
     api_config=API_CONFIG,
-    cache=CACHE_FILE,
+    cache=os.getenv("CACHE_FILE", "cache.tsv"),
     timeout=30,
 )
 

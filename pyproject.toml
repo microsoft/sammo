@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.1.0.1"
+version = "0.1.0.2"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -29,7 +29,6 @@ pybars3 = "^0.9"
 pyglove = "^0.4"
 spacy = "^3.6"
 tabulate = "^0.9"
-tiktoken = "^0.4"
 xmltodict = "^0.13"
 PyYAML = "^6.0"
 
