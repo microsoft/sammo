@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python=3.11
+  - pandas
   - pip
   - pip:
     - sammo==0.1.0.4
