@@ -2,6 +2,7 @@
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sammo.svg)](https://pypi.python.org/pypi/sammo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/tutorials/0_quickstart.ipynb)
 
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
