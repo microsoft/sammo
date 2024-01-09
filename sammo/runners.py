@@ -76,8 +76,8 @@ class OpenAIBaseRunner(Runner):
         if isinstance(api_config, dict):
             self._oai_config = dict(api_config)
         elif isinstance(api_config, pathlib.Path):
-            self._oai_config = json.load(api_config.open())
-
+            with api_config.open() as api_config_file:
+                self._oai_config = json.load(api_config_file)
         if isinstance(rate_limit, Throttler):
             self._throttler = rate_limit
         elif isinstance(rate_limit, AtMost):
