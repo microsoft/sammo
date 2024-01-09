@@ -55,7 +55,6 @@ class LongFormatData:
 
 
 class DataFormatter(Component):
-    DEFAULT_NAMES = {"input": "input", "gold_label": "output", "predicted_label": "predicted_output"}
     """
     A DataFormatter is a component that takes a DataTable or dict and formats it into a string.
 
@@ -66,6 +65,7 @@ class DataFormatter(Component):
         all inputs or output labels are grouped together.
     :param all_labels: A list of all possible labels, used by some formatters to determine the extractor.
     """
+    DEFAULT_NAMES = {"input": "input", "gold_label": "output", "predicted_label": "predicted_output"}
 
     def __init__(
         self,
