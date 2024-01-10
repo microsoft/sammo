@@ -101,7 +101,10 @@ class Result:
             return [self.parent]
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(value={repr(self.value)[:100]}..., parent={self.parent.__class__.__name__})"
+        value_str = repr(self.value)
+        if len(value_str) > 100:
+            value_str = value_str[:100] + "..."
+        return f"{self.__class__.__name__}(value={value_str}, parent={self.parent.__class__.__name__})"
 
 
 class NonEmptyResult(Result):
