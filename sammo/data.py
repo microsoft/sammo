@@ -291,7 +291,7 @@ class Accessor:
 
         :param name: Name of the field.
         """
-        new_data = [self._safe_get(y, name) for y in self.raw_values]
+        new_data = [Accessor._safe_get(y, name) for y in self.raw_values]
         clone = copy.deepcopy(self._parent)
         clone._data[self._group] = new_data
         return clone
