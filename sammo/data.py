@@ -46,8 +46,8 @@ class DataTable(pg.JSONConvertible):
         constants: dict | None = None,
         seed=42,
     ):
-        inputs = self._ensure_list(inputs)
-        outputs = self._ensure_list(outputs or [None] * len(inputs))
+        inputs = DataTable._ensure_list(inputs)
+        outputs = DataTable._ensure_list(outputs or [None] * len(inputs))
 
         if len(inputs) != len(outputs):
             raise ValueError(f"Input fields have {len(inputs)} rows, but output fields have {len(outputs)} rows.")
@@ -190,14 +190,14 @@ class DataTable(pg.JSONConvertible):
         :param max_col_width: Maximum width of each column. Defaults to 50.
         :param max_cell_length: Maximum characters in each cell. Defaults to 100.
         """
-        table_data = [{str(k): self._truncate(v, max_cell_length) for k, v in x.items()} for x in self.to_records()]
+        table_data = [{str(k): DataTable._truncate(v, max_cell_length) for k, v in x.items()} for x in self.to_records()]
         if table_data:
             table = tabulate.tabulate(
                 table_data[:max_rows], headers="keys", maxcolwidths=max_col_width, tablefmt="grid"
             )
         else:
             table = "<empty DataTable>"
-        return f"{table}\nConstants: {self._truncate(self.constants, max_col_width)}"
+        return f"{table}\nConstants: {DataTable._truncate(self.constants, max_col_width)}"
 
     def _to_explicit_idx(self, key: int | slice | list[int]):
         if isinstance(key, int):
