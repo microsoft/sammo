@@ -2,16 +2,16 @@
 arbitrary JSON-serializable objects that get rendered to byte strings for indexing.
 Mainly used to cache LLM API calls, but can be used for other purposes as well.
 """
+from collections.abc import MutableMapping
+from contextlib import ExitStack
+from io import BytesIO
 import logging
 import os
 import threading
 import warnings
-from collections.abc import MutableMapping
-from contextlib import ExitStack
-from io import BytesIO
 from pathlib import Path
-from typing import Callable
 
+from beartype.typing import Callable
 import filelock
 import orjson
 

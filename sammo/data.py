@@ -2,27 +2,19 @@
 DataTables are the primary data structure used in SAMMO.
 They are essentially a wrapper around a list of inputs and outputs (labels), with some additional functionality.
 """
-import collections
 import copy
 import hashlib
 import math
-import sys
+
+from beartype import beartype
+from beartype.typing import Callable, Iterator, Self
+import more_itertools
+import orjson
+import pyglove as pg
+import random
+import tabulate
 
 from sammo.utils import serialize_json
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-from typing import Iterator, Callable
-
-import more_itertools
-import pyglove as pg
-import orjson
-import random
-from beartype import beartype
-import tabulate
 
 
 # monkey-patch to fix bug in tabulate with booleans and multline

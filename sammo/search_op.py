@@ -2,7 +2,7 @@
 This module contains a variety of search operators that can be used to define a discrete search space for `GridSearch`
 or define a set of initial candidates for other search algorithms.
 """
-from typing import Iterable, Any
+from beartype.typing import Iterable, Any
 from pyglove.core.hyper import OneOf, ManyOf
 
 __all__ = ["one_of", "many_of", "permutate", "optional"]

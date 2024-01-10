@@ -6,15 +6,17 @@ to run the job. The jobs are run in order of priority, breaking ties with creati
 """
 import asyncio
 import bisect
+from collections import deque
+from dataclasses import dataclass, field
 import enum
 import logging
 import threading
 import time
-from collections import deque
-from dataclasses import dataclass, field
-from typing import Literal
-__all__ = ["Throttler", "AtMost"]
+
 from beartype import beartype
+from beartype.typing import Literal
+
+__all__ = ["Throttler", "AtMost"]
 
 logger = logging.getLogger(__name__)
 

@@ -5,10 +5,10 @@ get_extractor method that can be used to parse the LLM responses in this format.
 """
 import collections
 import json
-from typing import Sequence, Literal
 
-import xmltodict
+from beartype.typing import Sequence, Literal
 from frozendict import frozendict
+import xmltodict
 
 from sammo.base import Component, Runner
 from sammo.data import OutputAccessor

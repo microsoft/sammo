@@ -1,16 +1,9 @@
 import abc
 import copy
 import re
-import sys
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-    
-from typing import Callable
+from beartype.typing import Callable, Self
 from frozendict import frozendict
-
 import pyglove as pg
 import pybars
 from tabulate import tabulate

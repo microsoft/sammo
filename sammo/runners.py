@@ -1,12 +1,13 @@
+from abc import abstractmethod
 import asyncio
+from collections.abc import MutableMapping
 import json
 import logging
 import os
 import pathlib
-import typing
-from abc import abstractmethod
-from collections.abc import MutableMapping
+
 from beartype import beartype
+from beartype.typing import Literal
 import openai
 
 from sammo import PROMPT_LOGGER_NAME
@@ -63,7 +64,7 @@ class OpenAIBaseRunner(Runner):
         model_id: str,
         api_config: dict | pathlib.Path,
         cache: None | MutableMapping | str | os.PathLike = None,
-        equivalence_class: str | typing.Literal["major", "exact"] = "major",
+        equivalence_class: str | Literal["major", "exact"] = "major",
         rate_limit: AtMost | list[AtMost] | Throttler | int = 2,
         max_retries: int = 50,
         max_context_window: int | None = None,

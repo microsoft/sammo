@@ -3,14 +3,14 @@ import collections
 import copy
 import logging
 import random
-import typing
 from collections.abc import Callable
 import datetime
 from pathlib import Path
-from typing import Literal
-import pyglove as pg
+
 from beartype import beartype
+from beartype.typing import Literal
 from orjson import orjson
+import pyglove as pg
 from tabulate import tabulate
 
 import sammo.base
