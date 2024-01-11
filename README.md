@@ -16,6 +16,9 @@ Go to the [user guide](https://microsoft.github.io/sammo/docs/) for examples, ho
 pip install sammo
 ```
 
+Or, try the [live demo on Binder](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/tutorials/0_quickstart.ipynb).
+
+
 ## Use Cases
 SAMMO is designed to support
 - **Efficient data labeling**: Supports minibatching by packing and parsing multiple datapoints into a single prompt.
