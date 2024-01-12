@@ -2,27 +2,19 @@
 DataTables are the primary data structure used in SAMMO.
 They are essentially a wrapper around a list of inputs and outputs (labels), with some additional functionality.
 """
-import collections
 import copy
 import hashlib
 import math
-import sys
+
+from beartype import beartype
+from beartype.typing import Callable, Iterator, Self
+import more_itertools
+import orjson
+import pyglove as pg
+import random
+import tabulate
 
 from sammo.utils import serialize_json
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-from typing import Iterator, Callable
-
-import more_itertools
-import pyglove as pg
-import orjson
-import random
-from beartype import beartype
-import tabulate
 
 
 # monkey-patch to fix bug in tabulate with booleans and multline
@@ -46,8 +38,8 @@ class DataTable(pg.JSONConvertible):
         constants: dict | None = None,
         seed=42,
     ):
-        inputs = self._ensure_list(inputs)
-        outputs = self._ensure_list(outputs or [None] * len(inputs))
+        inputs = DataTable._ensure_list(inputs)
+        outputs = DataTable._ensure_list(outputs or [None] * len(inputs))
 
         if len(inputs) != len(outputs):
             raise ValueError(f"Input fields have {len(inputs)} rows, but output fields have {len(outputs)} rows.")
@@ -190,14 +182,14 @@ class DataTable(pg.JSONConvertible):
         :param max_col_width: Maximum width of each column. Defaults to 50.
         :param max_cell_length: Maximum characters in each cell. Defaults to 100.
         """
-        table_data = [{str(k): self._truncate(v, max_cell_length) for k, v in x.items()} for x in self.to_records()]
+        table_data = [{str(k): DataTable._truncate(v, max_cell_length) for k, v in x.items()} for x in self.to_records()]
         if table_data:
             table = tabulate.tabulate(
                 table_data[:max_rows], headers="keys", maxcolwidths=max_col_width, tablefmt="grid"
             )
         else:
             table = "<empty DataTable>"
-        return f"{table}\nConstants: {self._truncate(self.constants, max_col_width)}"
+        return f"{table}\nConstants: {DataTable._truncate(self.constants, max_col_width)}"
 
     def _to_explicit_idx(self, key: int | slice | list[int]):
         if isinstance(key, int):
@@ -291,7 +283,7 @@ class Accessor:
 
         :param name: Name of the field.
         """
-        new_data = [self._safe_get(y, name) for y in self.raw_values]
+        new_data = [Accessor._safe_get(y, name) for y in self.raw_values]
         clone = copy.deepcopy(self._parent)
         clone._data[self._group] = new_data
         return clone

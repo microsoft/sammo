@@ -4,18 +4,19 @@ Common formats such as JSON, XML, or Markdown are supported and require no data 
 required, it should happen downstream of the extraction step.
 """
 import abc
+import ast
 import fractions
 import json
 import logging
 import re
-import typing
-import ast
+
+from beartype.typing import Literal
 from frozendict import frozendict
 import jsonpath_ng
-import xmltodict
-import yaml
 from markdown_it import MarkdownIt
 from markdown_it.tree import SyntaxTreeNode
+import xmltodict
+import yaml
 
 from sammo.base import ListComponent, Component, LLMResult, EmptyResult, ParseResult, Runner, NonEmptyResult
 
@@ -30,7 +31,7 @@ class Extractor(ListComponent):
     :param flatten: Whether to flatten the output.
     """
 
-    def __init__(self, child: Component, on_error: typing.Literal["raise", "empty_result"] = "raise", flatten=True):
+    def __init__(self, child: Component, on_error: Literal["raise", "empty_result"] = "raise", flatten=True):
         super().__init__(child)
         self._on_error = on_error
         self.dependencies = [self._child]
@@ -123,7 +124,7 @@ class LambdaExtractor(Extractor):
         self,
         child: Component,
         lambda_src_code: str,
-        on_error: typing.Literal["raise", "empty_result"] = "raise",
+        on_error: Literal["raise", "empty_result"] = "raise",
         flatten=True,
     ):
         super().__init__(child, on_error, flatten)
@@ -154,7 +155,7 @@ class ParseJSON(Extractor):
     def __init__(
         self,
         child: Component,
-        parse_fragments: typing.Literal["all", "first", "whole"] = "all",
+        parse_fragments: Literal["all", "first", "whole"] = "all",
         lowercase_fieldnames: bool = True,
         on_error="raise",
     ):
@@ -298,7 +299,7 @@ class ParseXML(Extractor):
     def __init__(
         self,
         child: Component,
-        parse_fragments: typing.Literal["all", "first", "none"] = "first",
+        parse_fragments: Literal["all", "first", "none"] = "first",
         ignore_fragments_with_tags=tuple(),
         on_error: str = "raise",
         use_attributes_marker=False,
@@ -391,8 +392,8 @@ class ToNum(Extractor):
     def __init__(
         self,
         child: Component,
-        on_error: typing.Literal["raise", "empty_result"] = "raise",
-        dtype: typing.Literal["fraction", "int", "float"] = "float",
+        on_error: Literal["raise", "empty_result"] = "raise",
+        dtype: Literal["fraction", "int", "float"] = "float",
         factor: float = 1,
         offset: float = 0,
     ):

@@ -3,10 +3,10 @@ import asyncio
 import collections
 import logging
 import random
-import textwrap
-import typing
-from typing import Callable, Any
 import re
+import textwrap
+
+from beartype.typing import Callable, Literal
 import numpy as np
 import pyglove as pg
 import spacy
@@ -859,7 +859,7 @@ class StopwordsCompressor(Component):
 
     def __init__(
         self,
-        filter_stopwords: typing.Literal["reuters", "spacy", "none"],
+        filter_stopwords: Literal["reuters", "spacy", "none"],
         remove_punctuation=False,
         remove_whitespace=False,
     ):

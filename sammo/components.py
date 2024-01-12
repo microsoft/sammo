@@ -2,12 +2,11 @@ import asyncio
 import logging
 import math
 import warnings
-from typing import Callable
-from frozendict import frozendict
 
 import beartype
+from beartype.typing import Callable, Literal
+from frozendict import frozendict
 
-import typing
 import sammo.utils as utils
 from sammo.base import (
     Component,
@@ -53,7 +52,7 @@ class GenerateText(ScalarComponent):
         seed=0,
         randomness: float = 0,
         max_tokens=None,
-        on_error: typing.Literal["raise", "empty_result"] = "empty_result",
+        on_error: Literal["raise", "empty_result"] = "empty_result",
     ):
         super().__init__(child, name)
 
@@ -221,7 +220,7 @@ class Output(Component):
         self,
         child: Component,
         minibatch_size=1,
-        on_error: typing.Literal["raise", "empty_result", "backoff"] = "raise",
+        on_error: Literal["raise", "empty_result", "backoff"] = "raise",
     ):
         super().__init__(child)
         self.row_batch_size = minibatch_size
@@ -234,7 +233,7 @@ class Output(Component):
         data: DataTable | list | None = None,
         progress_callback: Callable | bool = True,
         priority: int = 0,
-        on_error: typing.Literal["raise", "empty_result", "backoff"] = "raise",
+        on_error: Literal["raise", "empty_result", "backoff"] = "raise",
     ) -> DataTable:
         """Synchronous version of `arun`."""
         return utils.sync(self.arun(runner, data, progress_callback, priority, on_error))
@@ -253,7 +252,7 @@ class Output(Component):
         data: DataTable | list | None = None,
         progress_callback: Callable | bool = True,
         priority: int = 0,
-        on_error: typing.Literal["raise", "empty_result", "backoff"] = "raise",
+        on_error: Literal["raise", "empty_result", "backoff"] = "raise",
     ):
         """
         Run the component asynchronously and return a DataTable with the results.

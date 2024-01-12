@@ -1,16 +1,9 @@
 import abc
 import copy
 import re
-import sys
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-    
-from typing import Callable
+from beartype.typing import Callable, Self
 from frozendict import frozendict
-
 import pyglove as pg
 import pybars
 from tabulate import tabulate
@@ -108,7 +101,10 @@ class Result:
             return [self.parent]
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(value={repr(self.value)[:100]}..., parent={self.parent.__class__.__name__})"
+        value_str = repr(self.value)
+        if len(value_str) > 100:
+            value_str = value_str[:100] + "..."
+        return f"{self.__class__.__name__}(value={value_str}, parent={self.parent.__class__.__name__})"
 
 
 class NonEmptyResult(Result):

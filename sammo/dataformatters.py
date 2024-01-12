@@ -5,10 +5,10 @@ get_extractor method that can be used to parse the LLM responses in this format.
 """
 import collections
 import json
-from typing import Sequence, Literal
 
-import xmltodict
+from beartype.typing import Sequence, Literal
 from frozendict import frozendict
+import xmltodict
 
 from sammo.base import Component, Runner
 from sammo.data import OutputAccessor
@@ -55,7 +55,6 @@ class LongFormatData:
 
 
 class DataFormatter(Component):
-    DEFAULT_NAMES = {"input": "input", "gold_label": "output", "predicted_label": "predicted_output"}
     """
     A DataFormatter is a component that takes a DataTable or dict and formats it into a string.
 
@@ -66,6 +65,7 @@ class DataFormatter(Component):
         all inputs or output labels are grouped together.
     :param all_labels: A list of all possible labels, used by some formatters to determine the extractor.
     """
+    DEFAULT_NAMES = {"input": "input", "gold_label": "output", "predicted_label": "predicted_output"}
 
     def __init__(
         self,

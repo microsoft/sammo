@@ -13,3 +13,5 @@ _*/
 /*.ipynb
 /*.json
 *.txt
+.python-version
+sammo-env/

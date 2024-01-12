@@ -1,17 +1,12 @@
 import json
-import re
-import typing
-from json import JSONDecodeError
 
+from beartype.typing import Literal
 from frozendict import frozendict
 
 from sammo.base import Component, LLMResult, Runner, TextResult, ScalarComponent
 from sammo.components import GenerateText
 from sammo.data import DataTable
 from sammo.dataformatters import DataFormatter
-from sammo.extractors import ParseJSON, MarkdownParser, ParseXML
-
-import pyglove as pg
 
 
 class Section(Component):
@@ -54,7 +49,7 @@ class MetaPrompt(Component):
     def __init__(
         self,
         structure: list[Paragraph | Section],
-        render_as: typing.Literal["raw", "json", "xml", "markdown", "markdown-alt"] = "markdown",
+        render_as: Literal["raw", "json", "xml", "markdown", "markdown-alt"] = "markdown",
         data_formatter: DataFormatter | None = None,
         name: str | None = None,
         seed: int = 0
@@ -71,7 +66,7 @@ class MetaPrompt(Component):
         filled_out_structure = [await child(runner, context, dynamic_context) for child in self._structure]
         return TextResult(self._render(filled_out_structure))
 
-    def with_extractor(self, on_error: typing.Literal["raise", "empty_result"] = "raise"):
+    def with_extractor(self, on_error: Literal["raise", "empty_result"] = "raise"):
         if self._data_formatter is not None:
             return self._data_formatter.get_extractor(GenerateText(self), on_error=on_error)
         else:
