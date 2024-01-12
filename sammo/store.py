@@ -22,11 +22,13 @@ __all__ = ["PersistentDict", "InMemoryDict"]
 
 logger = logging.getLogger(__name__)
 
+
 def serialize_json(obj):
     if isinstance(obj, bytes):
         return obj
     else:
         return serialize_json_obj(obj)
+
 
 class PersistentDict(MutableMapping):
     """

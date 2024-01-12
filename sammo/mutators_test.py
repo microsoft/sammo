@@ -21,9 +21,7 @@ def test_parsing():
 @pytest.mark.asyncio
 async def test_mutate():
     cache = {"The big ball rolled over the street.": ["The big ball ", "rolled over the street", "."]}
-    mutator = SyntaxTreeMutator(
-        starting_prompt=basic_template(), cache=cache, path_descriptor={"name": "test"}
-    )
+    mutator = SyntaxTreeMutator(starting_prompt=basic_template(), cache=cache, path_descriptor={"name": "test"})
     runner = MockedRunner("LLM response")
     result = await mutator.mutate(basic_template(), MagicMock(), runner, random_state=42)
     assert result[0].action == "del"

@@ -23,14 +23,16 @@ def test_many_of():
 
 def test_permutate():
     space = lambda: permutate([1, 2, 3])
-    assert sorted(enumerate_candidates(space)) == sorted([
-        [1, 2, 3],
-        [1, 3, 2],
-        [2, 1, 3],
-        [3, 1, 2],
-        [2, 3, 1],
-        [3, 2, 1],
-    ])
+    assert sorted(enumerate_candidates(space)) == sorted(
+        [
+            [1, 2, 3],
+            [1, 3, 2],
+            [2, 1, 3],
+            [3, 1, 2],
+            [2, 3, 1],
+            [3, 2, 1],
+        ]
+    )
 
 
 def test_optional():

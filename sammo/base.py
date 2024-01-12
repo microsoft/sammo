@@ -124,10 +124,21 @@ class LLMResult(NonEmptyResult):
         "history",
         "retries",
         "request_text",
-        "fingerprint"
+        "fingerprint",
     )
 
-    def __init__(self, value, parent=None, stored_values=None, extra_data=None, history=None, retries=0, costs=None, request_text=None, fingerprint=None):
+    def __init__(
+        self,
+        value,
+        parent=None,
+        stored_values=None,
+        extra_data=None,
+        history=None,
+        retries=0,
+        costs=None,
+        request_text=None,
+        fingerprint=None,
+    ):
         super().__init__(value, parent, stored_values)
         self.extra_data = extra_data
         self._costs = costs
@@ -345,7 +356,6 @@ class StoreAs:
             return [r.clone_with_stored_value(self._name, r.value) for r in result]
         else:
             return result.clone_with_stored_value(self._name, result.value)
-
 
 
 class Template(ScalarComponent):

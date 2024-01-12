@@ -243,22 +243,24 @@ class SyntaxTreeMutator(Mutator):
 
         to_pharaphrase = [x | {"i": i} for i, x in enumerate(new_candidates) if x["action"] == "par"]
         if to_pharaphrase:
-            paraphrased = (await Output(
-                Union(
-                    *(
-                        GenerateText(
-                            Template(
-                                "Generate a variation of the following text while keeping the semantic meaning."
-                                "\nInput: {{{text}}}\nOutput: ",
-                                text=x["target"],
-                            ),
-                            randomness=0.9,
-                            seed=random_state,
+            paraphrased = (
+                await Output(
+                    Union(
+                        *(
+                            GenerateText(
+                                Template(
+                                    "Generate a variation of the following text while keeping the semantic meaning."
+                                    "\nInput: {{{text}}}\nOutput: ",
+                                    text=x["target"],
+                                ),
+                                randomness=0.9,
+                                seed=random_state,
+                            )
+                            for x in to_pharaphrase
                         )
-                        for x in to_pharaphrase
                     )
-                )
-            ).arun(runner)).outputs.raw_values[0]
+                ).arun(runner)
+            ).outputs.raw_values[0]
             for o, x in zip(paraphrased, to_pharaphrase):
                 new_candidates[x["i"]] = x | {
                     "phrases": self.replace_all_elements(current_phrases, x["target"], o.value)
@@ -384,14 +386,16 @@ class ShortenSegment(Mutator):
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_state):
         n_words = len(str(segment_content).split()) * self._reduction_factor
-        rewritten = (await Output(
-            GenerateText(
-                Template(
-                    f"Summarize the text below in {n_words:0.0f} words or less. \n\n" "{{{content}}}",
-                    content=segment_content,
+        rewritten = (
+            await Output(
+                GenerateText(
+                    Template(
+                        f"Summarize the text below in {n_words:0.0f} words or less. \n\n" "{{{content}}}",
+                        content=segment_content,
+                    )
                 )
-            )
-        ).arun(runner)).outputs.raw_values[0]
+            ).arun(runner)
+        ).outputs.raw_values[0]
         return [rewritten.value]
 
 
@@ -513,8 +517,13 @@ class APO(Mutator):
         res = rng.sample(output, min(n_mutations, len(output)))
 
         return [
-            MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={segment_path: r.value}),
-                             prompt_variants=prompt_variants, output=output, sampled_errors_idx=sampled_errors_idx)
+            MutatedCandidate(
+                self.__class__.__name__,
+                pg.clone(candidate, override={segment_path: r.value}),
+                prompt_variants=prompt_variants,
+                output=output,
+                sampled_errors_idx=sampled_errors_idx,
+            )
             for r in res
         ]
 
@@ -577,14 +586,16 @@ class APE(ShortenSegment):
         ][:n_mutations]
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_state):
-        output = (await Output(
-            Union(
-                *[
-                    GenerateText(Template(self.RESAMPLE, instructions=segment_content), randomness=0.9, seed=i)
-                    for i in range(n_mutations)
-                ]
-            )
-        ).arun(runner)).outputs.raw_values[0]
+        output = (
+            await Output(
+                Union(
+                    *[
+                        GenerateText(Template(self.RESAMPLE, instructions=segment_content), randomness=0.9, seed=i)
+                        for i in range(n_mutations)
+                    ]
+                )
+            ).arun(runner)
+        ).outputs.raw_values[0]
         return [o.value for o in output]
 
 
@@ -600,15 +611,17 @@ class InduceInstructions(APE):
 
 class SegmentToBulletPoints(ShortenSegment):
     async def _rewrite(self, runner, segment_content, n_mutations, random_seed):
-        rewritten = (await Output(
-            GenerateText(
-                Template(
-                    f"Rewrite the text below as a bullet list with at most 10 words per bullet point. \n\n"
-                    "{{{content}}}",
-                    content=segment_content,
+        rewritten = (
+            await Output(
+                GenerateText(
+                    Template(
+                        f"Rewrite the text below as a bullet list with at most 10 words per bullet point. \n\n"
+                        "{{{content}}}",
+                        content=segment_content,
+                    )
                 )
-            )
-        ).arun(runner)).outputs.raw_values[0]
+            ).arun(runner)
+        ).outputs.raw_values[0]
         return [rewritten.value]
 
 

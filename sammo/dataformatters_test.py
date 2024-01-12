@@ -32,6 +32,7 @@ def test_format_not_flatten_data():
     returned_single = test.format_single({"key": "value1"}, {"l": 1}, {"l": 0})
     assert returned_single == expected
 
+
 @pytest.mark.asyncio
 async def test_format_flat_json_item_orient():
     test = JSONDataFormatter(newline_delimited=False, flatten_1d_dicts=True, indent=None)

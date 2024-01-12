@@ -52,7 +52,7 @@ class MetaPrompt(Component):
         render_as: Literal["raw", "json", "xml", "markdown", "markdown-alt"] = "markdown",
         data_formatter: DataFormatter | None = None,
         name: str | None = None,
-        seed: int = 0
+        seed: int = 0,
     ):
         super().__init__(structure, name)
 
