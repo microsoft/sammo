@@ -85,9 +85,7 @@ class Scheduler:
         self._graph = dict()
         while queue:
             x = queue.pop(0)
-            children = [
-                ComputeNode(c, x.compute_context, x.priority + i) for i, c in enumerate(x.job.dependencies)
-            ]
+            children = [ComputeNode(c, x.compute_context, x.priority + i) for i, c in enumerate(x.job.dependencies)]
             queue = children + queue
             self._graph[x] = set(children)
 

@@ -68,9 +68,10 @@ async def test_basic_failed_limit(jobs_with_flags, completion_time):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("jobs_with_flags,completion_time", [([True, False] * 1, 0.11),
-                                                             ([True] * 2 + [False] * 1, 0.21),
-                                                             ([True] * 1 + [False] * 5, 0.11)])
+@pytest.mark.parametrize(
+    "jobs_with_flags,completion_time",
+    [([True, False] * 1, 0.11), ([True] * 2 + [False] * 1, 0.21), ([True] * 1 + [False] * 5, 0.11)],
+)
 async def test_basic_rejected_limit(jobs_with_flags, completion_time):
     throttler = Throttler([AtMost(1, "rejected", 0.1, 0.1)], rejection_window=1, sleep_interval=0.001)
 

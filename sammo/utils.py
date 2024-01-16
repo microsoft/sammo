@@ -72,6 +72,7 @@ def is_interactive() -> bool:
 
 class IFrameRenderer:
     """Render HTML in an IFrame for Jupyter Lab and Notebook"""
+
     def __init__(self, raw_html, width="100%", height="300px"):
         self.raw_html = raw_html
         self.width = width

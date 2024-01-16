@@ -100,10 +100,7 @@ def test_write(data, expected):
 
 @pytest.mark.parametrize(
     "data,expected",
-    [
-        ([("test", "Hello")], b'"test"\t"Hello"'),
-        ([("test", "Hello"), ("int", 3)], b'"test"\t"Hello"\n"int"\t3')
-    ],
+    [([("test", "Hello")], b'"test"\t"Hello"'), ([("test", "Hello"), ("int", 3)], b'"test"\t"Hello"\n"int"\t3')],
 )
 def test_persist(data, expected):
     with patch("builtins.open") as mock_file:
@@ -112,16 +109,12 @@ def test_persist(data, expected):
             store[k] = v
         store.persist("")
         print(mock_file.mock_calls)
-        assert len(mock_file.mock_calls)== len(data)*3 +3
+        assert len(mock_file.mock_calls) == len(data) * 3 + 3
+
 
 @pytest.mark.parametrize(
     "data",
-    [
-        3,
-        {"test": "Hello"},
-        "some string",
-        b"bytes string"
-    ],
+    [3, {"test": "Hello"}, "some string", b"bytes string"],
 )
 def test_fix_point(data):
     serialize_json(data) == serialize_json(serialize_json(data))

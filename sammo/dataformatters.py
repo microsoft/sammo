@@ -19,6 +19,7 @@ __all__ = ["DataFormatter", "JSONDataFormatter", "XMLDataFormatter", "MultiLabel
 
 class LongFormatData:
     """Intermediate data representation that allows for easy grouping of records by kind."""
+
     __slots__ = ["_records", "_default_sort"]
 
     def __init__(self, records: list[dict], default_sort=("id", "kind_order")):
@@ -65,6 +66,7 @@ class DataFormatter(Component):
         all inputs or output labels are grouped together.
     :param all_labels: A list of all possible labels, used by some formatters to determine the extractor.
     """
+
     DEFAULT_NAMES = {"input": "input", "gold_label": "output", "predicted_label": "predicted_output"}
 
     def __init__(

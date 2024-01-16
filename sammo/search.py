@@ -251,9 +251,9 @@ class BeamSearch(Optimizer):
         active_set = await self.evaluate(
             [c.candidate for c in initial_candidates], self._runner, self._objective, dataset, colbar
         )
-        active_set = self.argsort([
-            {**x, "action": c.action, "prev_actions": [c.action]} for c, x in zip(initial_candidates, active_set)
-        ])
+        active_set = self.argsort(
+            [{**x, "action": c.action, "prev_actions": [c.action]} for c, x in zip(initial_candidates, active_set)]
+        )
         self.log(-1, active_set)
         rng = random.Random(42)
 

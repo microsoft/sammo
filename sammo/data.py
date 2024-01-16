@@ -182,7 +182,9 @@ class DataTable(pg.JSONConvertible):
         :param max_col_width: Maximum width of each column. Defaults to 50.
         :param max_cell_length: Maximum characters in each cell. Defaults to 100.
         """
-        table_data = [{str(k): DataTable._truncate(v, max_cell_length) for k, v in x.items()} for x in self.to_records()]
+        table_data = [
+            {str(k): DataTable._truncate(v, max_cell_length) for k, v in x.items()} for x in self.to_records()
+        ]
         if table_data:
             table = tabulate.tabulate(
                 table_data[:max_rows], headers="keys", maxcolwidths=max_col_width, tablefmt="grid"

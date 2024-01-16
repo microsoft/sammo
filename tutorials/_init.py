@@ -25,6 +25,7 @@ runner = OpenAIChat(
     timeout=30,
 )
 
+
 def load_data(
     url="https://github.com/google/BIG-bench/raw/main/bigbench/benchmark_tasks/implicatures/task.json",
 ):

@@ -25,7 +25,7 @@ SAMMO is designed to support
 - **Prompt prototyping and engineering**: Re-usable components and prompt structures to quickly build and test new prompts.
 - **Instruction optimization**: Optimize instructions to do better on a given task.
 - **Prompt compression**: Compress prompts while maintaining performance.
-- **Large-scale prompt execution**: parallelization 
+- **Large-scale prompt execution**: parallelization
 and rate-limiting out-of-the-box so you can run many queries in parallel and at scale without overwhelming the LLM API.
 
 It is less useful if you want to build
@@ -33,7 +33,7 @@ It is less useful if you want to build
 - Interactive, production-ready LLM applications (→ check out [LangChain](https://www.langchain.com/))
 
 
-## Example 
+## Example
 This is extending the [chat dialog example from Guidance](https://github.com/guidance-ai/guidance#user-content-chat-dialog-notebook) by running queries in parallel.
 
 ```python
