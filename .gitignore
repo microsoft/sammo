@@ -3,6 +3,7 @@ build
 **/cache/
 *.lock
 .*/
+!.github/
 _*/
 /dist
 /cache

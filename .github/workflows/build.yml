@@ -1,0 +1,48 @@
+name: build
+run-name: Build Pipeline
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+jobs:
+  build:
+    name: Verify, Build and Test
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python:
+          - "3.11"
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Display system and Python versions
+        run: |
+          python -c 'import platform as p; print(f"{p.python_implementation()} {p.python_version()} | {p.system()} {p.release()}")'
+      - name: Set up environment
+        run: |
+          python -m pip install build setuptools wheel pre-commit
+      - name: Run pre-commit checks
+        run: |
+          pre-commit run --show-diff-on-failure --color=always
+      - name: Build
+        run: |
+          python -m build
+      - name: Run tests
+        run: |
+          pytest
