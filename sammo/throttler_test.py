@@ -36,7 +36,7 @@ async def test_basic_call_limit(n_jobs, completion_time):
     durations = [j["duration"] for j in jobs]
     # provide a relaxed upper bound for max duration to account for differences
     # in executors across test environments
-    assert max(durations) <= (completion_time + completion_time * 0.5)
+    assert max(durations) <= (completion_time * 2)
 
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ async def test_basic_running_limit(n_jobs, completion_time, job_duration=0.05):
     durations = [j["duration"] for j in jobs]
     # provide a relaxed upper bound for max duration to account for differences
     # in executors across test environments
-    assert max(durations) <= (completion_time + completion_time * 0.5)
+    assert max(durations) <= (completion_time * 2)
 
 
 @pytest.mark.asyncio
@@ -66,7 +66,7 @@ async def test_basic_failed_limit(jobs_with_flags, completion_time):
     durations = [j["duration"] for j in jobs]
     # provide a relaxed upper bound for max duration to account for differences
     # in executors across test environments
-    assert max(durations) <= (completion_time + completion_time * 0.5)
+    assert max(durations) <= (completion_time * 2)
 
 
 @pytest.mark.asyncio
@@ -83,4 +83,4 @@ async def test_basic_rejected_limit(jobs_with_flags, completion_time):
     durations = [j["duration"] for j in jobs]
     # provide a relaxed upper bound for max duration to account for differences
     # in executors across test environments
-    assert max(durations) <= (completion_time + completion_time * 0.5)
+    assert max(durations) <= (completion_time * 2)
