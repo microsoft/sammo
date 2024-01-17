@@ -10,7 +10,7 @@ on:
   workflow_call:
 jobs:
   build:
-    name: Verify, Build and Test
+    name: Build
     strategy:
       fail-fast: false
       matrix:
