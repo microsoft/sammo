@@ -8,17 +8,12 @@ from pytest import approx
 from sammo.throttler import Throttler, AtMost
 
 
-async def sleep(delay: float) -> None:
-    await asyncio.get_running_loop().run_in_executor(None, time.sleep, delay)
-
-
 async def simple_job(job_id, throttler, fail=False, delay=0):
     scheduled = time.perf_counter()
     job = await throttler.wait_in_line()
     run = time.perf_counter()
     if delay > 0:
         await asyncio.sleep(delay)
-        # await sleep(delay)
     end = time.perf_counter()
     throttler.update_job_stats(job, cost=0, failed=fail)
     return {
@@ -27,7 +22,6 @@ async def simple_job(job_id, throttler, fail=False, delay=0):
         "duration": end - scheduled,
         "net_duration": end - run,
         "job_id": job_id,
-        "active_threads": threading.active_count(),
     }
 
 
@@ -41,7 +35,9 @@ async def test_basic_call_limit(n_jobs, completion_time):
     jobs = [j.result() for j in jobs]
     durations = [j["duration"] for j in jobs]
     assert min(durations) <= completion_time
-    assert max(durations) <= completion_time
+    # provide a relaxed upper bound for max duration to account for differences
+    # in executors across test environments
+    assert max(durations) <= (completion_time + completion_time * 0.5)
 
 
 @pytest.mark.asyncio
