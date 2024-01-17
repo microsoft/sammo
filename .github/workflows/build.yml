@@ -32,9 +32,6 @@ jobs:
         id: setup-python
         with:
           python-version: ${{ matrix.python }}
-      - name: Display system and Python versions
-        run: |
-          python -c 'import platform as p; print(f"{p.python_implementation()} {p.python_version()} | {p.system()} {p.release()}")'
       - name: Setup pipx for build tool isolation
         run: |
           pip install --user pipx
