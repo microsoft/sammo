@@ -49,6 +49,10 @@ jobs:
           poetry config virtualenvs.create true --local
           poetry config virtualenvs.in-project true --local
           poetry install
+      - name: Run static type checks
+        continue-on-error: true
+        run: |
+          poetry run mypy sammo
       - name: Run tests
         run: |
           poetry run pytest -v
