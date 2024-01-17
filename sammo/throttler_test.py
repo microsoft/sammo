@@ -1,7 +1,10 @@
+import asyncio
+import threading
+import time
+
 import pytest
 from pytest import approx
-import asyncio
-import time
+
 from sammo.throttler import Throttler, AtMost
 
 
@@ -14,7 +17,8 @@ async def simple_job(job_id, throttler, fail=False, delay=0):
     job = await throttler.wait_in_line()
     run = time.perf_counter()
     if delay > 0:
-        await sleep(delay)
+        await asyncio.sleep(delay)
+        # await sleep(delay)
     end = time.perf_counter()
     throttler.update_job_stats(job, cost=0, failed=fail)
     return {
@@ -23,6 +27,7 @@ async def simple_job(job_id, throttler, fail=False, delay=0):
         "duration": end - scheduled,
         "net_duration": end - run,
         "job_id": job_id,
+        "active_threads": threading.active_count(),
     }
 
 
@@ -35,6 +40,8 @@ async def test_basic_call_limit(n_jobs, completion_time):
         jobs = [g.create_task(simple_job(i, throttler)) for i in range(n_jobs)]
     jobs = [j.result() for j in jobs]
     durations = [j["duration"] for j in jobs]
+
+    assert max([j["active_threads"] for j in jobs]) == 1
     assert min(durations) <= completion_time
     assert max(durations) <= completion_time
 
@@ -49,6 +56,7 @@ async def test_basic_running_limit(n_jobs, completion_time, job_duration=0.05):
     jobs = [j.result() for j in jobs]
 
     durations = [j["duration"] for j in jobs]
+    assert max([j["active_threads"] for j in jobs]) == 1
     assert min(durations) <= completion_time
     assert max(durations) == approx(completion_time, abs=0.02)
 
