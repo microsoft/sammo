@@ -34,15 +34,24 @@ jobs:
       - name: Display system and Python versions
         run: |
           python -c 'import platform as p; print(f"{p.python_implementation()} {p.python_version()} | {p.system()} {p.release()}")'
-      - name: Set up environment
+      - name: Setup pipx for build tool isolation
         run: |
-          python -m pip install build setuptools wheel pre-commit
+          pip install --user pipx
+          pipx ensurepath
       - name: Run pre-commit checks
         run: |
+          pipx install pre-commit
           pre-commit run --all --show-diff-on-failure --color=always
-      - name: Build
+      - name: Set up poetry and install dependencies
         run: |
-          python -m build
+          pipx install poetry
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+          poetry install
       - name: Run tests
         run: |
-          pytest
+          poetry run pytest -v
+      - name: Build package
+        run: |
+          pipx install build
+          pyproject-build
