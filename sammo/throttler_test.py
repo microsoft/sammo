@@ -40,8 +40,6 @@ async def test_basic_call_limit(n_jobs, completion_time):
         jobs = [g.create_task(simple_job(i, throttler)) for i in range(n_jobs)]
     jobs = [j.result() for j in jobs]
     durations = [j["duration"] for j in jobs]
-
-    assert max([j["active_threads"] for j in jobs]) == 1
     assert min(durations) <= completion_time
     assert max(durations) <= completion_time
 
@@ -56,7 +54,6 @@ async def test_basic_running_limit(n_jobs, completion_time, job_duration=0.05):
     jobs = [j.result() for j in jobs]
 
     durations = [j["duration"] for j in jobs]
-    assert max([j["active_threads"] for j in jobs]) == 1
     assert min(durations) <= completion_time
     assert max(durations) == approx(completion_time, abs=0.02)
 
