@@ -110,8 +110,6 @@ class OpenAIBaseRunner(Runner):
         self._timeout = timeout
         self._max_timeout_retries = max_timeout_retries
         self._max_context_window = max_context_window
-        if not model_id.startswith("gpt") and max_context_window is None:
-            raise ValueError("max_context_window must be set for non-GPT models.")
 
     @classmethod
     def get_equivalence_class(cls, model_id: str) -> str:

@@ -2,10 +2,51 @@
 This module contains a variety of search operators that can be used to define a discrete search space for `GridSearch`
 or define a set of initial candidates for other search algorithms.
 """
-from beartype.typing import Iterable, Any
+import pyglove as pg
+from sammo.base import Component
+from beartype.typing import Iterable, Any, Callable
 from pyglove.core.hyper import OneOf, ManyOf
 
-__all__ = ["one_of", "many_of", "permutate", "optional"]
+__all__ = ["one_of", "many_of", "permutate", "optional", "get_points_from_search_space", "get_first_point"]
+
+
+def get_points_from_search_space(
+    search_space: Callable | Component | list | dict, n_points: int, sample: bool = False, seed: int = 42
+) -> list[Component]:
+    """Materialize a number of points from a search space.
+
+    :param search_space: Search space, either represented as function or a single Output class.
+    :param n_points: Number of points to materialize.
+    :param sample: Whether to sample from the search space or enumerate and return first `n_points`.
+    :param seed: Random seed for sampling.
+    """
+    if isinstance(search_space, list):
+        search_space = pg.list(search_space)
+    elif isinstance(search_space, dict):
+        search_space = pg.dict(search_space)
+    if isinstance(search_space, Callable):
+        candidates = list()
+        for context in pg.iter(
+            pg.hyper.trace(search_space),
+            num_examples=n_points,
+            algorithm=pg.geno.Random(seed) if sample else None,
+        ):
+            with context():
+                candidates.append(search_space())
+    elif search_space.is_deterministic:
+        candidates = [search_space] * n_points
+    elif sample:
+        candidates = list(pg.random_sample(search_space, n_points, seed=seed))
+    else:
+        candidates = list(pg.iter(search_space, n_points))
+    return candidates
+
+
+def get_first_point(search_space: Callable | Component | list | dict) -> Component:
+    """Return the first value of the enumerated search space.
+
+    :param search_space: Search space, either represented as function or a single Output class."""
+    return get_points_from_search_space(search_space, 1, sample=False)[0]
 
 
 class OneOfPatched(OneOf):

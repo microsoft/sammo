@@ -1,5 +1,10 @@
-from sammo.search_op import one_of, many_of, permutate, optional
+from sammo.search_op import one_of, many_of, permutate, optional, get_points_from_search_space
 import pyglove as pg
+
+@pg.symbolize(eq=True)
+class Demo:
+    def __init__(self, params):
+        self.params = params
 
 
 def enumerate_candidates(search_space):
@@ -38,3 +43,9 @@ def test_permutate():
 def test_optional():
     space = lambda: optional(1)
     assert enumerate_candidates(space) == [[], [1]]
+
+
+def test_get_points_from_search_space():
+    me = Demo(one_of(["a", "b"]))
+    points = get_points_from_search_space(me, 2, sample=False)
+    assert points == [Demo("a"), Demo("b")]

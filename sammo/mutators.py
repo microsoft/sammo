@@ -6,7 +6,7 @@ import random
 import re
 import textwrap
 
-from beartype.typing import Callable, Literal
+from beartype.typing import Callable, Literal, Any
 import numpy as np
 import pyglove as pg
 import spacy
@@ -18,6 +18,7 @@ from sammo.components import Output, GenerateText, Union, ForEach
 from sammo.instructions import FewshotExamples
 from sammo.data import DataTable
 from sammo.extractors import ExtractRegex
+from sammo.search_op import get_points_from_search_space
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class MutatedCandidate:
         return self
 
 
+@pg.symbolize(eq=True)
 class Mutator(abc.ABC):
     def __init__(
         self, starting_prompt: Output | Callable | None = None, seed: int = 42, sample_for_init_candidates: bool = True
@@ -82,21 +84,11 @@ class Mutator(abc.ABC):
     ) -> list[MutatedCandidate]:
         if self._starting_prompt is None:
             raise ValueError("In order to use search, this method needs to be overriden or starting prompt passed.")
-        else:
-            if isinstance(self._starting_prompt, Callable):
-                candidates = list()
-                for context in pg.iter(
-                    pg.hyper.trace(self._starting_prompt),
-                    num_examples=n_initial_candidates,
-                    algorithm=pg.geno.Random(self._seed) if self._sample_for_init_candidates else None,
-                ):
-                    with context():
-                        candidates.append(self._starting_prompt())
-            elif self._starting_prompt.is_deterministic:
-                candidates = [self._starting_prompt] * n_initial_candidates
-            else:
-                candidates = list(pg.random_sample(self._starting_prompt, n_initial_candidates, seed=self._seed))
-            return [MutatedCandidate("init", c) for c in candidates]
+
+        candidates = get_points_from_search_space(
+            self._starting_prompt, n_initial_candidates, self._sample_for_init_candidates, self._seed
+        )
+        return [MutatedCandidate("init", c) for c in candidates]
 
 
 class SyntaxTreeMutator(Mutator):
@@ -664,12 +656,15 @@ class ParaphraseStatic(ShortenSegment):
 
 
 class RemoveStopWordsFromSegment(ShortenSegment):
-    def __init__(self, path_descriptor: str | dict, stopwords_compressors: list):
+    def __init__(self, path_descriptor: str | dict, choices: Any):
         self._path_descriptor = CompiledQuery.from_path(path_descriptor)
-        self._stopwords_compressors = stopwords_compressors
+        self._choices = choices
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_seed):
-        return [proc.compress(segment_content) for proc in self._stopwords_compressors[:n_mutations]]
+        if not isinstance(self._choices, list):
+            return [self._choices.compress(segment_content)]
+        else:
+            return [proc.compress(segment_content) for proc in self._choices[:n_mutations]]
 
 
 class DropParameter(Mutator):
@@ -717,7 +712,7 @@ class DropIntro(DropParameter):
 
 
 class ReplaceParameter(DropParameter):
-    def __init__(self, path_descriptor: str | dict, choices: list):
+    def __init__(self, path_descriptor: str | dict, choices: Any):
         super().__init__(path_descriptor)
         self._choices = choices
 
@@ -726,6 +721,7 @@ class ReplaceParameter(DropParameter):
     ) -> list[MutatedCandidate]:
         current_path, new_values = self._sample_new_values(candidate, n_mutations, random_state)
         mutations = list()
+
         for new_value in new_values:
             mutations.append(
                 MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={current_path: new_value}))
@@ -734,9 +730,13 @@ class ReplaceParameter(DropParameter):
 
     def _sample_new_values(self, candidate, n_mutations, random_state):
         current_path, current_value = candidate.query(self._path_descriptor, return_path=True)
-        valid_values = [v for v in self._choices if v != current_value]
-        rng = random.Random(random_state)
-        new_values = rng.sample(valid_values, min(n_mutations, len(valid_values)))
+        if not isinstance(self._choices, list):
+            # if we only have a single value, deterministically replace it
+            new_values = [self._choices]
+        else:
+            valid_values = [v for v in self._choices if v != current_value]
+            rng = random.Random(random_state)
+            new_values = rng.sample(valid_values, min(n_mutations, len(valid_values)))
         return current_path, new_values
 
 

@@ -76,6 +76,7 @@ class DataFormatter(Component):
         include_ids: bool = True,
         orient: Literal["item", "kind"] = "item",
         all_labels=None,
+        attributes_processor=None,
     ):
         super().__init__(None)
         self._format = format
@@ -84,6 +85,7 @@ class DataFormatter(Component):
             self._names = {**self._names, **names}
         self._include_ids = include_ids
         self._flatten_1d_dicts = flatten_1d_dicts
+        self._attributes_processor = attributes_processor
         self._orient = "id" if orient.startswith("item") else "kind"
 
     def format_datatable(self, data, offset: int = 0):
@@ -116,7 +118,8 @@ class DataFormatter(Component):
             for i, v in enumerate(values):
                 if isinstance(v, dict) and len(v) == 1 and self._flatten_1d_dicts:
                     v = list(v.values())[0]
-
+                if self._attributes_processor is not None:
+                    v = self._attributes_processor(v)
                 records.append(
                     {
                         "id": offset + i,
@@ -227,7 +230,7 @@ class QuestionAnswerFormatter(MultiLabelFormatter):
         return "\n".join(result)
 
     def get_extractor(self, child, on_error="raise"):
-        return ExtractRegex(child, r"^A[^:]*:\s*([^\n]*)")
+        return ExtractRegex(child, r"^\s*A[^:]*:\s*([^\n]*)")
 
 
 class PlainFormatter(DataFormatter):

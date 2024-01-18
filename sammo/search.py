@@ -66,16 +66,16 @@ class Optimizer:
     def fit_transform(self, dataset: DataTable) -> DataTable:
         return utils.sync(self.afit_transform(dataset))
 
-    def score(self, dataset: DataTable) -> dict:
+    def score(self, dataset: DataTable, **kwargs) -> dict:
         best = self.best_prompt
         pbar = CompactProgressBars().get("inference", total=best.n_minibatches(dataset), show_rate=False)
-        y_pred = best.run(self._runner, dataset, progress_callback=pbar.update)
+        y_pred = best.run(self._runner, dataset, progress_callback=pbar.update, **kwargs)
         record = self._candidate_record(best, dataset, y_pred)
         self._state["transform"].append(record)
         return record
 
-    def transform(self, dataset: DataTable) -> DataTable:
-        return self.score(dataset)["predictions"]
+    def transform(self, dataset: DataTable, **kwargs) -> DataTable:
+        return self.score(dataset, **kwargs)["predictions"]
 
     @property
     def best(self) -> dict:
@@ -390,11 +390,13 @@ class EnumerativeSearch(Optimizer):
         algorithm: Literal["grid", "random"] = "grid",
         max_candidates: int | None = None,
         n_evals_parallel: int = 2,
+        mutate_from: Output | None = None,
     ):
         super().__init__(runner, search_space, objective, maximize)
         self._algorithm = algorithm
         self._max_trials = max_candidates
         self._n_evals_parallel = n_evals_parallel
+        self._mutate_from = mutate_from
 
     async def afit_transform(
         self,
@@ -416,8 +418,14 @@ class EnumerativeSearch(Optimizer):
 
         semaphore = asyncio.Semaphore(self._n_evals_parallel)
 
-        async def evaluate_candidate(candidate, iteration, action):
+        async def evaluate_point(candidate, iteration, action):
             async with semaphore:
+                if self._mutate_from is not None:
+                    evolved = self._mutate_from
+                    for mutator in candidate:
+                        # todo: think of a better interface for this
+                        evolved = (await mutator.mutate(evolved, dataset, self._runner))[0].candidate
+                    candidate = evolved
                 y_pred = await candidate.arun(self._runner, dataset, minibatch_progress_callback)
                 candidate_progress.update()
                 return {
@@ -431,15 +439,18 @@ class EnumerativeSearch(Optimizer):
         async with asyncio.TaskGroup() as tg:
             for i, search_context in enumerate(pg.iter(traced_search_space, num_examples=self._max_trials)):
                 with search_context():
-                    current_candidate = self._search_space()
-                total_minibatches += current_candidate.n_minibatches(dataset)
+                    current_point = self._search_space()
+                # todo: fix this in case of mutators that change the number of minibatches
+                total_minibatches += (current_point if self._mutate_from is None else self._mutate_from).n_minibatches(
+                    dataset
+                )
                 minibatch_progress_callback = pbar.get(
                     "minibatches (total)",
                     total_minibatches,
                     show_rate=False,
                 ).update
                 decisions = search_context.__closure__[0].cell_contents.to_dict("name_or_id", "literal")
-                running_tasks.append(tg.create_task(evaluate_candidate(current_candidate, i, decisions)))
+                running_tasks.append(tg.create_task(evaluate_point(current_point, i, decisions)))
         self._state["fit"] += [t.result() for t in running_tasks]
         self._state["fit_costs"] = self._runner.costs.to_dict()
         pbar.finalize()

@@ -233,7 +233,7 @@ class Output(Component):
         data: DataTable | list | None = None,
         progress_callback: Callable | bool = True,
         priority: int = 0,
-        on_error: Literal["raise", "empty_result", "backoff"] = "raise",
+        on_error: Literal["raise", "empty_result", "backoff"] | None = None,
     ) -> DataTable:
         """Synchronous version of `arun`."""
         return utils.sync(self.arun(runner, data, progress_callback, priority, on_error))
@@ -252,7 +252,7 @@ class Output(Component):
         data: DataTable | list | None = None,
         progress_callback: Callable | bool = True,
         priority: int = 0,
-        on_error: Literal["raise", "empty_result", "backoff"] = "raise",
+        on_error: Literal["raise", "empty_result", "backoff"] | None = None,
     ):
         """
         Run the component asynchronously and return a DataTable with the results.
