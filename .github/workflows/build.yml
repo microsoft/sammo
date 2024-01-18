@@ -1,0 +1,59 @@
+name: build
+run-name: Build Pipeline
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+jobs:
+  build:
+    name: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python:
+          - "3.11"
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Setup pipx for build tool isolation
+        run: |
+          pip install --user pipx
+          pipx ensurepath
+      - name: Run pre-commit checks
+        run: |
+          pipx install --python '${{ steps.setup-python.outputs.python-path }}' pre-commit
+          pre-commit run --all --show-diff-on-failure --color=always
+      - name: Set up poetry and install dependencies
+        run: |
+          pipx install --python '${{ steps.setup-python.outputs.python-path }}' poetry
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+          poetry install
+      - name: Run static type checks
+        continue-on-error: true
+        run: |
+          poetry run mypy sammo
+      - name: Run tests
+        run: |
+          poetry run pytest -v
+      - name: Build package
+        run: |
+          pipx install --python '${{ steps.setup-python.outputs.python-path }}' build
+          pyproject-build

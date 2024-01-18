@@ -46,6 +46,7 @@ astroid = "2.15.8"
 sphinx-autodoc2 = "*"
 pandas = "*"
 pre-commit = "^3.6.0"
+mypy = "^1.8.0"
 
 [tool.black]
 line-length = 120
