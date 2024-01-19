@@ -35,6 +35,9 @@ PyYAML = "^6.0"
 [tool.poetry.extras]
 parser = ["benepar"]
 
+[tool.poetry.group.dev]
+optional = true
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4"
 pytest-skip-slow = "*"
@@ -46,11 +49,6 @@ pre-commit = "^3.6.0"
 mypy = "^1.8.0"
 poethepoet = "^0.24.4"
 build = "^1.0.3"
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
 jupyter-book = "^0.15"
 astroid = "^3.0.2"
 sphinx-autodoc2 = "*"
