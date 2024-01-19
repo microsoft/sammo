@@ -18,3 +18,4 @@ _*/
 sammo-env/
 docs/api/
 poetry.toml
+*.swp
