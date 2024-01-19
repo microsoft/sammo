@@ -15,7 +15,6 @@ packages = [
 python = "^3.11,<3.12"
 beartype = "^0.15"
 benepar = {version = "^0.2", optional = true}
-typing_extensions = "^4.0"
 filelock = "^3.12"
 frozendict = "^2.3"
 jsonpath_ng = "^1.5"
