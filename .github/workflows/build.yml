@@ -44,14 +44,14 @@ jobs:
           poetry install
       - name: Run pre-commit checks
         run: |
-          poetry poe pre-commit
+          poetry run poe pre-commit
       - name: Run static type checks
         continue-on-error: true
         run: |
-          poetry poe type-check
+          poetry run poe type-check
       - name: Run tests
         run: |
-          poetry poe test -v
+          poetry run poe test -v
   build-and-upload-docs:
     name: Build and Upload Docs
     runs-on: ubuntu-latest
@@ -79,7 +79,7 @@ jobs:
           poetry install
       - name: Build docs
         run: |
-          poetry poe build-docs
+          poetry run poe build-docs
       - name: Upload docs
         uses: actions/upload-pages-artifact@v3
         with:

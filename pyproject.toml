@@ -53,10 +53,6 @@ build = "^1.0.3"
 [tool.black]
 line-length = 120
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
 [tool.poe.tasks.build-docs]
 help = "Build the documentation site"
 cmd = "jb build --path-output _build_docs docs"
@@ -76,3 +72,7 @@ cmd = "pre-commit run --all --show-diff-on-failure --color=always"
 [tool.poe.tasks.build-package]
 help = "Build Python package (wheel, sdist)"
 cmd = "pyproject-build"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
