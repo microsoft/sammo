@@ -41,14 +41,20 @@ pytest-skip-slow = "*"
 pytest-mock = "*"
 pytest-asyncio = "*"
 black = "^23"
-jupyter-book = "^0.15"
-astroid = "^3.0.2"
-sphinx-autodoc2 = "*"
 pandas = "*"
 pre-commit = "^3.6.0"
 mypy = "^1.8.0"
 poethepoet = "^0.24.4"
 build = "^1.0.3"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+jupyter-book = "^0.15"
+astroid = "^3.0.2"
+sphinx-autodoc2 = "*"
+poetry = "^1.7.1"
 
 [tool.black]
 line-length = 120
