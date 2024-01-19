@@ -1,5 +1,9 @@
 # 🏠 Overview
 
+```{eval-rst}
+Version:
+|version|
+```
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
 ```{image} overview.png
