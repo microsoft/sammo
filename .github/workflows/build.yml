@@ -41,7 +41,7 @@ jobs:
           pipx install --python '${{ steps.setup-python.outputs.python-path }}' poetry
           poetry config virtualenvs.create true --local
           poetry config virtualenvs.in-project true --local
-          poetry install
+          poetry install --with dev
       - name: Run pre-commit checks
         run: |
           poetry run poe pre-commit
@@ -76,7 +76,7 @@ jobs:
           pipx install --python '${{ steps.setup-python.outputs.python-path }}' poetry
           poetry config virtualenvs.create true --local
           poetry config virtualenvs.in-project true --local
-          poetry install --with docs
+          poetry install --with dev
       - name: Build docs
         run: |
           poetry run poe build-docs
