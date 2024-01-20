@@ -50,7 +50,7 @@ build = "^1.0.3"
 jupyter-book = "^0.15"
 astroid = "^3.0.2"
 sphinx-autodoc2 = "*"
-poetry = "^1.7.1"
+poetry-core = "^1.8.1"  # (see set_version.py)
 
 [tool.black]
 line-length = 120
