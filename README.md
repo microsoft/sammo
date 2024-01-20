@@ -12,8 +12,33 @@ A flexible, easy-to-use library for running and optimizing prompts for Large Lan
 Go to the [user guide](https://microsoft.github.io/sammo/docs/) for examples, how-tos, and API reference.
 <!--start-->
 
+## Install library only
+
 ```bash
 pip install sammo
+```
+
+## Install and run tutorials
+
+***Prerequisites***
+* Python 3.11+
+* [poetry](https://python-poetry.org) installed (`pipx install poetry` recommended)
+
+The following commands will install sammo and jupyter dependencies in a virtualenv and launch jupyter notebook.
+
+```bash
+# clone sammo to a local directory
+git clone https://github.com/microsoft/sammo.git
+cd sammo
+
+# optional: have poetry create a virtualenv in project folder rather than in its cache dir
+poetry config virtualenvs.in-project true --local
+
+# install sammo and dev dependencies (including jupyter) in the project venv
+poetry install --with dev
+
+# launch jupyter notebook and open tutorials directory
+poetry run jupyter notebook --notebook-dir docs/tutorials
 ```
 
 Or, try the [live demo on Binder](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/tutorials/0_quickstart.ipynb).
