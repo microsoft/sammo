@@ -46,7 +46,6 @@ pandas = "*"
 pre-commit = "^3.6.0"
 mypy = "^1.8.0"
 poethepoet = "^0.24.4"
-build = "^1.0.3"
 jupyter-book = "^0.15"
 astroid = "^3.0.2"
 sphinx-autodoc2 = "*"
@@ -70,10 +69,6 @@ cmd = "pytest"
 [tool.poe.tasks.pre-commit]
 help = "Run all pre-commit checks"
 cmd = "pre-commit run --all --show-diff-on-failure --color=always"
-
-[tool.poe.tasks.build-package]
-help = "Build Python package (wheel, sdist)"
-cmd = "pyproject-build"
 
 [build-system]
 requires = ["poetry-core"]
