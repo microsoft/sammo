@@ -60,11 +60,11 @@ jobs:
         run: |
           pipx install  --python '${{ steps.setup-python.outputs.python-path }}' twine
           twine check --strict dist/*
-			- name: Store the distribution files
-				uses: actions/upload-artifact@v3
-				with:
-					name: python-package-distributions
-					path: dist/
+      - name: Store the distribution files
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
       - name: Build documentation artifacts
         run: |
           poetry run poe build-docs
@@ -80,18 +80,18 @@ jobs:
       defaults:
         run:
           shell: bash
-			environment:
-				name: testpypi
-				url: https://test.pypi.org/p/sammo
-			permissions:
-				id-token: write  # IMPORTANT: mandatory for trusted publishing
-			steps:
-				- name: Download all the dists
-					uses: actions/download-artifact@v3
-					with:
-						name: python-package-distributions
-						path: dist/
-				- name: Publish distribution to TestPyPI
-					uses: pypa/gh-action-pypi-publish@release/v1
-  				with:
-	  				repository-url: https://test.pypi.org/legacy/
+      environment:
+        name: testpypi
+        url: https://test.pypi.org/p/sammo
+      permissions:
+        id-token: write  # IMPORTANT: mandatory for trusted publishing
+      steps:
+        - name: Download all the dists
+          uses: actions/download-artifact@v3
+          with:
+            name: python-package-distributions
+            path: dist/
+        - name: Publish distribution to TestPyPI
+          uses: pypa/gh-action-pypi-publish@release/v1
+          with:
+            repository-url: https://test.pypi.org/legacy/
