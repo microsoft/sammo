@@ -243,8 +243,9 @@ class OpenAIChat(OpenAIBaseRunner):
     ) -> LLMResult:
         """
         Use the Chat API to generate text.
-        Args:
-            system_prompt (optional): The prompt to use to prime the system response.
+
+        :param system_prompt: The prompt to use to prime the system response.
+        :type system_prompt: str, optional
         """
         messages = []
 

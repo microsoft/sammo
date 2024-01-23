@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.1.0.4"
+version = "0.1.0.5"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -15,8 +15,6 @@ packages = [
 python = "^3.11,<3.12"
 beartype = "^0.15"
 benepar = {version = "^0.2", optional = true}
-docstring_inheritance = "*"
-typing_extensions = "^4.0"
 filelock = "^3.12"
 frozendict = "^2.3"
 jsonpath_ng = "^1.5"
@@ -35,21 +33,42 @@ PyYAML = "^6.0"
 [tool.poetry.extras]
 parser = ["benepar"]
 
+[tool.poetry.group.dev]
+optional = true
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4"
 pytest-skip-slow = "*"
 pytest-mock = "*"
 pytest-asyncio = "*"
 black = "^23"
-jupyter-book = "^0.15"
-astroid = "2.15.8"
-sphinx-autodoc2 = "*"
 pandas = "*"
 pre-commit = "^3.6.0"
 mypy = "^1.8.0"
+poethepoet = "^0.24.4"
+jupyter-book = "^0.15"
+astroid = "^3.0.2"
+sphinx-autodoc2 = "*"
+poetry-core = "^1.8.1"  # (see set_version.py)
 
 [tool.black]
 line-length = 120
+
+[tool.poe.tasks.build-docs]
+help = "Build the documentation site"
+cmd = "jb build --path-output _build_docs docs"
+
+[tool.poe.tasks.type-check]
+help = "Run static type checking"
+cmd = "mypy sammo"
+
+[tool.poe.tasks.test]
+help = "Run tests"
+cmd = "pytest"
+
+[tool.poe.tasks.pre-commit]
+help = "Run all pre-commit checks"
+cmd = "pre-commit run --all --show-diff-on-failure --color=always"
 
 [build-system]
 requires = ["poetry-core"]

@@ -16,3 +16,6 @@ _*/
 *.txt
 .python-version
 sammo-env/
+docs/api/
+poetry.toml
+*.swp

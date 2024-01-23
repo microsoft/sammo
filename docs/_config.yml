@@ -4,16 +4,16 @@
 title: SAMMO
 author: Tobias Schnabel
 copyright: "2023"
-exclude_patterns:
-  - examples*
-  - .*
-  - sammo*
-  - dev*
-  - utils*
-  - data*
-  - deprecated*
-  - cache*
-  - "*.md"
+#exclude_patterns:
+#  - examples*
+#  - .*
+##  - sammo*
+#  - dev*
+#  - utils*
+#  - data*
+#  - deprecated*
+#  - cache*
+##  - "*.md"
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
@@ -22,14 +22,14 @@ execute:
 
 # Add a bibtex file so that we can create citations
 bibtex_bibfiles:
-  - docs/references.bib
+  - references.bib
 
 # Information about where the book exists on the web
 repository:
   url: https://github.com/microsoft/sammo/ # Online location of your book
 
 launch_buttons:
-  binderhub_url             : https://mybinder.org
+  binderhub_url: https://mybinder.org
 
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
@@ -40,14 +40,16 @@ html:
 sphinx:
   extra_extensions:
   - autodoc2
+  local_extensions:
+    set_version: .
   config:
     nb_merge_streams: true
     autodoc2_index_template: null
-    autodoc2_output_dir: build/apidocs
+    autodoc2_output_dir: api
     autodoc2_module_all_regexes:
       - "sammo.*(throttler|store|utils|search_op|data|compactbars|components).*"
     autodoc2_packages:
-      - sammo
+      - "../sammo"
     autodoc2_hidden_objects:
       - inherited
       - private
