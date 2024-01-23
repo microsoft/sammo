@@ -62,6 +62,7 @@ jobs:
           twine check --strict dist/*
       - name: Store the distribution files
         uses: actions/upload-artifact@v3
+        if: matrix.os == 'ubuntu-latest'
         with:
           name: python-package-distributions
           path: dist/
@@ -70,6 +71,7 @@ jobs:
           poetry run poe build-docs
       - name: Store the documentation artifacts
         uses: actions/upload-pages-artifact@v3
+        if: matrix.os == 'ubuntu-latest'
         with:
           path: _build_docs/_build/html
 
