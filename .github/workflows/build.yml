@@ -109,6 +109,7 @@ jobs:
 
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
+      contents: write  # Allow artifacts to be uploaded to release on GH
 
     steps:
       - name: Download the distribution artifacts
