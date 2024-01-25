@@ -98,7 +98,7 @@ jobs:
     name: Publish Artifacts
     runs-on: ubuntu-latest
     needs: build
-    if: github.event == 'release'
+    if: github.event_name == 'release'
     defaults:
       run:
         shell: bash
@@ -141,7 +141,7 @@ jobs:
     name: Publish Documentation Site
     runs-on: ubuntu-latest
     needs: release-publish-artifacts
-    if: github.event == 'release'
+    if: github.event_name == 'release'
     defaults:
       run:
         shell: bash
