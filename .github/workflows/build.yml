@@ -74,6 +74,9 @@ jobs:
       - name: Build documentation artifacts
         run: |
           poetry run poe build-docs
+      - name: Zip documentation
+        if: matrix.os == 'ubuntu-latest'
+        run: |
           DOCS_VERSION=`poetry version -s`
           mkdir _build_docs/dist
           pushd _build_docs/_build/html
