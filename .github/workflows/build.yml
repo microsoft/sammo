@@ -7,10 +7,12 @@ on:
   pull_request:
     branches:
       - main
-  workflow_call:
+  release:
+    types: [published]
 jobs:
   build:
     name: Build
+
     strategy:
       fail-fast: false
       matrix:
@@ -20,10 +22,13 @@ jobs:
           - macos-latest
         python:
           - "3.11"
+
     runs-on: ${{ matrix.os }}
+
     defaults:
       run:
         shell: bash
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,35 +57,104 @@ jobs:
       - name: Run tests
         run: |
           poetry run poe test -v
-  build-and-upload-docs:
-    name: Build and Upload Docs
+      - name: Build wheel and sdist for distribution
+        run: |
+          pipx install  --python '${{ steps.setup-python.outputs.python-path }}' build
+          pyproject-build
+      - name: Check distribution with twine
+        run: |
+          pipx install  --python '${{ steps.setup-python.outputs.python-path }}' twine
+          twine check --strict dist/*
+      - name: Store the distribution files
+        uses: actions/upload-artifact@v3
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Build documentation artifacts
+        run: |
+          poetry run poe build-docs
+      - name: Zip documentation
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          DOCS_VERSION=`poetry version -s`
+          mkdir _build_docs/dist
+          pushd _build_docs/_build/html
+          zip -r ../../dist/sammo-docs-$DOCS_VERSION.zip .
+          popd
+      - name: Store the documentation artifacts for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          path: _build_docs/_build/html
+      - name: Store the zipped documentation
+        uses: actions/upload-artifact@v3
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: zipped-documentation
+          path: _build_docs/dist/
+
+  release-publish-artifacts:
+    name: Publish Artifacts
     runs-on: ubuntu-latest
     needs: build
+    if: github.event == 'release'
     defaults:
       run:
         shell: bash
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sammo
+
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        id: setup-python
+      - name: Download the distribution artifacts
+        uses: actions/download-artifact@v3
         with:
-          python-version: "3.11"
-      - name: Setup pipx for build tool isolation
-        run: |
-          pip install --user pipx
-          pipx ensurepath
-      - name: Set up poetry and install dependencies
-        run: |
-          pipx install --python '${{ steps.setup-python.outputs.python-path }}' poetry
-          poetry config virtualenvs.create true --local
-          poetry config virtualenvs.in-project true --local
-          poetry install --with dev
-      - name: Build docs
-        run: |
-          poetry run poe build-docs
-      - name: Upload docs
-        uses: actions/upload-pages-artifact@v3
+          name: python-package-distributions
+          path: dist/
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Download zipped documentation
+        uses: actions/download-artifact@v3
         with:
-          path: _build_docs/_build/html
+          name: zipped-documentation
+          path: dist/
+      - name: Generate SHA256 checksums for all artifacts
+        run: |
+          sha256sum dist/*.whl > checksums.txt
+          sha256sum dist/*.tar.gz >> checksums.txt
+          sha256sum dist/*.zip >> checksums.txt
+          cat checksums.txt
+      - name: Update release with SHA256 and Artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            dist/*
+            checksums.txt
+
+  release-publish-pages:
+    name: Publish Documentation Site
+    runs-on: ubuntu-latest
+    needs: release-publish-artifacts
+    if: github.event == 'release'
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
