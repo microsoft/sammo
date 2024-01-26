@@ -9,16 +9,18 @@ A flexible, easy-to-use library for running and optimizing prompts for Large Lan
 ![Overview](https://microsoft.github.io/sammo/_images/overview.png)
 
 ## How to Get Started
-Go to the [user guide](https://microsoft.github.io/sammo/docs/) for examples, how-tos, and API reference.
-<!--start-->
+Go to the [user guide](https://microsoft.github.io/sammo/) for examples, how-tos, and API reference.
 
-## Install library only
+Just want to have a quick look? Try the [live demo on Binder](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/tutorials/0_quickstart.ipynb).
+
+<!--start-->
+### Install library only
 
 ```bash
 pip install sammo
 ```
 
-## Install and run tutorials
+### Install and run tutorials
 
 ***Prerequisites***
 * Python 3.11+
@@ -41,7 +43,6 @@ poetry install --with dev
 poetry run jupyter notebook --notebook-dir docs/tutorials
 ```
 
-Or, try the [live demo on Binder](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/tutorials/0_quickstart.ipynb).
 
 
 ## Use Cases
