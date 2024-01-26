@@ -13,5 +13,7 @@ parts:
   - caption: 📖 API Reference
     chapters:
     - file: api/sammo/sammo
-  - chapters:
+  - caption: ℹ️ Project Info
+    chapters:
+    - file: ../CONTRIBUTING.md
     - file: release_history
