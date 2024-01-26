@@ -1,4 +1,4 @@
-# SAMMO ([📘User Guide](https://microsoft.github.io/sammo/docs/))
+# SAMMO ([📘User Guide](https://microsoft.github.io/sammo/))
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sammo.svg)](https://pypi.python.org/pypi/sammo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
