@@ -26,15 +26,96 @@ If nothing relevant shows up, please do [open a new issue](https://github.com/mi
 
 ## Setting up your dev environment
 
-1.  Instructions for installing in venv/conda here
-1.  Install the pre-commit hooks by running `pre-commit install`.
+This project uses [Poetry](https://python-poetry.org/) for project management. Some tasks have been standardized to execute via the [Poe](https://poethepoet.natn.io/) task runner.
 
-    We use the [pre-commit](https://pre-commit.com/) project to manage commit hooks. The configuration for **pre-commit** is stored in the `.pre-commit-config.yaml` file. By default, our pre-commit hooks run the [black](https://black.readthedocs.io/en/stable/) formatter and check odds-and-ends like line endings (must be LF only).
+We recommend that you install Poetry using [pipx](https://pipx.pypa.io/stable/) so that it's isolated from the sammo codebase.
+
+```
+pipx install poetry
+```
+
+Next, check out sammo:
+
+```
+# assume HTTPS, adjust for SSH
+git clone https://github.com/microsoft/sammo.git
+cd sammo
+```
+
+Optional, but recommended: have poetry create a venv in the project folder rather than in its cache dir
+
+```
+poetry config virtualenvs.in-project true --local
+```
+
+Install the dev dependencies
+
+```
+poetry install --with dev
+```
+
+Show the configured tasks available through the Poe runner:
+
+```
+poetry run poe
+```
+
+Set up pre-commit hooks
+
+```
+poetry run pre-commit install
+```
 
 ## Running Tests
 
+The [pytest](https://docs.pytest.org/) tests can be run using the following command
+
+```
+poetry run poe test
+```
+
+arguments can be appended (ie for verbose mode)
+
+```
+poetry run poe test -v
+```
+
 ## Running Type Checks
+
+```
+poetry run poe type-check
+```
 
 ## PR workflow
 
+All changes must come through a pull request on a feature branch.
+
+1. If there isn't an existing issue for your change, please make one
+1. Ensure your local main branch is up to date
+1. Create a new branch to hold your changes. Suggested branch naming convention is `<your github user>/<a short description of your changes>`. For example `pbourke/update-contributor-docs`.
+1. Run `poetry version`. If the current version is **not** a pre-release (ie 0.1.0.6 vs 0.1.0.6rc0), then bump to the next pre-release version:
+
+   ```
+   # example version bump
+   $ poetry version
+   sammo 0.1.0.6
+   $ poetry version 0.1.0.7rc0
+   Bumping version from 0.1.0.6 to 0.1.0.7rc0
+   ```
+1. Make your changes and commit to your feature branch.
+1. Push to GitHub as appropriate (to your fork for non-maintainers)
+1. Open a Pull Request to the project and reference the associated issue from your PR
+1. GitHub Actions will run automated checks and tests
+1. When you're ready, request review from the maintainers
+
 ## Release Process
+
+The following instructions are for maintainers
+
+1. Each release should begin with a PR to (at the least) update the version from pre-release to final
+1. Decide on the new version number by following [Semantic Versioning](https://semver.org/) principles
+1. After the release PR is merged, the release can be made from the main branch. Each release is given a tag on the main branch with the version number (this happens automatically via the GH release mechanism)
+1. Go to [the sammo project releases page](https://github.com/microsoft/sammo/releases) and click "Draft a new release"
+1. Enter the new version number as the tag and release title and give a brief description
+1. Click "Publish release"
+1. A GitHub Actions release hook will run the automated checks and tests, publish the package to PyPI and publish the documentation to the GitHub Pages site
