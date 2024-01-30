@@ -86,6 +86,28 @@ poetry run poe test -v
 poetry run poe type-check
 ```
 
+## Building and previewing documentation
+
+This project uses [Jupyter Book](https://jupyterbook.org/) for documentation. The documentation configuration and contents are contained in the `docs` folder.
+
+To build the documentation, run the following command:
+
+```
+poetry run poe build-docs
+```
+
+to preview it using Python's built-in HTTP server, run:
+
+```
+poetry run poe serve-docs
+```
+
+This will open a server accessible at http://localhost:8000 to preview the documentation site. You can change the host and port as needed (these arguments just pass through to the call to `http.server`):
+
+```
+poetry run poe serve-docs -b 0.0.0.0 8001
+```
+
 ## PR workflow
 
 All changes must come through a pull request on a feature branch.

@@ -58,6 +58,10 @@ line-length = 120
 help = "Build the documentation site"
 cmd = "jb build --path-output _build_docs docs"
 
+[tool.poe.tasks.serve-docs]
+help = "Preview the documentation site using python's built-in http server"
+cmd = "python -m http.server -d _build_docs/_build/html/"
+
 [tool.poe.tasks.type-check]
 help = "Run static type checking"
 cmd = "mypy sammo"

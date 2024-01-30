@@ -15,5 +15,5 @@ parts:
     - file: api/sammo/sammo
   - caption: ℹ️ Project Info
     chapters:
-    - file: ../CONTRIBUTING.md
+    - file: contributing
     - file: release_history
