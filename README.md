@@ -1,4 +1,4 @@
-# SAMMO ([📘User Guide](https://microsoft.github.io/sammo/docs/))
+# SAMMO ([📘User Guide](https://microsoft.github.io/sammo/))
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sammo.svg)](https://pypi.python.org/pypi/sammo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -24,26 +24,19 @@ pip install sammo
 
 ***Prerequisites***
 * Python 3.11+
-* [poetry](https://python-poetry.org) installed (`pipx install poetry` recommended)
 
-The following commands will install sammo and jupyter dependencies in a virtualenv and launch jupyter notebook.
+The following commands will install sammo and jupyter and launch jupyter notebook. It's recommended that you create and activate a virtualenv prior to installing packages.
 
 ```bash
+pip install sammo jupyter
+
 # clone sammo to a local directory
 git clone https://github.com/microsoft/sammo.git
 cd sammo
 
-# optional: have poetry create a virtualenv in project folder rather than in its cache dir
-poetry config virtualenvs.in-project true --local
-
-# install sammo and dev dependencies (including jupyter) in the project venv
-poetry install --with dev
-
 # launch jupyter notebook and open tutorials directory
-poetry run jupyter notebook --notebook-dir docs/tutorials
+jupyter notebook --notebook-dir docs/tutorials
 ```
-
-
 
 ## Use Cases
 SAMMO is designed to support
