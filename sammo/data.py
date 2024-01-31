@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """
 DataTables are the primary data structure used in SAMMO.
 They are essentially a wrapper around a list of inputs and outputs (labels), with some additional functionality.

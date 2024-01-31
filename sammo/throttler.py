@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """
 Provides a context manager for throttling async jobs. The throttling is defined by a list of AtMost instance and
 can be used to limit the number of concurrent jobs, the number of jobs per time period, the total cost of jobs per

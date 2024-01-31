@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import pathlib
 import sammo
 from sammo.runners import OpenAIChat

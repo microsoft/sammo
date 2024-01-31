@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """Small number of utility functions that are used across SAMMO."""
 import asyncio
 import collections

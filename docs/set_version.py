@@ -1,4 +1,10 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+
 def setup(app):
+    """Reads project version number from pyproject toml and sets it in the Sphinx context
+    under the expected key"""
     from poetry.core.factory import Factory
 
     # read project version string from pyproject.toml

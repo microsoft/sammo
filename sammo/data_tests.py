@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import pytest
 import pandas as pd
 from sammo.data import DataTable, MinibatchIterator, Accessor
