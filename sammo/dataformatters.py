@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """
 DataFormatters are components that take a DataTable or dict and format it into a string. They also provide a
 get_extractor method that can be used to parse the LLM responses in this format.

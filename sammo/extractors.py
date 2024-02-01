@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """
 This module contains components that extract data from the output of other components, typically from LLM calls.
 Common formats such as JSON, XML, or Markdown are supported and require no data format specification. If validation is

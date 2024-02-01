@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import pytest
 from fractions import Fraction
 from sammo.extractors import *

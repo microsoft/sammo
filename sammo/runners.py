@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 from abc import abstractmethod
 import asyncio
 from collections.abc import MutableMapping

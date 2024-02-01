@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 import pytest
 from sammo.dataformatters import DataFormatter, JSONDataFormatter, XMLDataFormatter
 from sammo.base import VerbatimText
