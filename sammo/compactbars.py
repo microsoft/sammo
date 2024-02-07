@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """
 Provides a way of displaying multiple progress bars in a single line. Works in both interactive and non-interactive
 environments.

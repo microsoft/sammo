@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 """Implements two different types of dictionaries that can store either data in memory or on disk. Allows keys to be
 arbitrary JSON-serializable objects that get rendered to byte strings for indexing.
 Mainly used to cache LLM API calls, but can be used for other purposes as well.

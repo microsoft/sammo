@@ -1,4 +1,6 @@
-# Testing the Costs class
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+"""Testing the Costs class"""
 from asyncio import TaskGroup
 from collections.abc import MutableMapping
 from unittest.mock import AsyncMock, patch, Mock, MagicMock

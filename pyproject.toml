@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.1.0.6"
+version = "0.1.1rc0"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -57,6 +57,10 @@ line-length = 120
 [tool.poe.tasks.build-docs]
 help = "Build the documentation site"
 cmd = "jb build --path-output _build_docs docs"
+
+[tool.poe.tasks.serve-docs]
+help = "Preview the documentation site using python's built-in http server"
+cmd = "python -m http.server -d _build_docs/_build/html/"
 
 [tool.poe.tasks.type-check]
 help = "Run static type checking"

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 from sammo.search_op import one_of, many_of, permutate, optional, get_points_from_search_space
 import pyglove as pg
 

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 from unittest.mock import patch, mock_open, Mock
 import pytest
 from io import BytesIO
