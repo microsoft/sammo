@@ -50,3 +50,10 @@ def test_get_points_from_search_space():
     me = Demo(one_of(["a", "b"]))
     points = get_points_from_search_space(me, 2, sample=False)
     assert points == [Demo("a"), Demo("b")]
+
+
+def test_get_points_from_search_space_with_names():
+    me = lambda: Demo(one_of(["a", "b"], name="params"))
+    points, names = get_points_from_search_space(me, 2, sample=False, return_names=True)
+    assert points == [Demo("a"), Demo("b")]
+    assert names == [{"params": "'a'"}, {"params": "'b'"}]
