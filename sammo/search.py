@@ -142,14 +142,14 @@ class Optimizer:
     def show_report(self):
         if self._state is None or not self._state["fit"]:
             raise ValueError("Need to fit model first.")
-        print("")
-        print(f"Fitting log:")
+
         table_data = list()
         for x in self._state["fit"]:
             row = {k: x.get(k, "") for k in self.REPORT_COLUMNS} | x["details"]
             if self._state["validation"]:
                 row["validation_objective"] = x.get("validation", {"objective": ""})["objective"]
             table_data.append(row)
+        print(f"\nFitting log ({len(table_data)} entries):")
         print(tabulate(table_data, headers="keys", maxcolwidths=50))
         self._show_extra_report()
 
@@ -219,6 +219,7 @@ class BeamSearch(Optimizer):
         n_initial_candidates: int = 1,
         add_previous: bool = False,
         priors: Literal["uniform"] | dict = "uniform",
+        max_evals: int | None = None,
     ):
         super().__init__(runner, None, objective, maximize)
         self._mutator = mutator
@@ -228,6 +229,7 @@ class BeamSearch(Optimizer):
         self._n_initial_candidates = n_initial_candidates
         self._add_previous = add_previous
         self._action_stats = collections.defaultdict(lambda: collections.defaultdict(int))
+        self._max_evals = max_evals
         if priors != "uniform":
             for k, v in priors.items():
                 for k2, v2 in v.items():
@@ -257,6 +259,7 @@ class BeamSearch(Optimizer):
             [{**x, "action": c.action, "prev_actions": [c.action]} for c, x in zip(initial_candidates, active_set)]
         )
         self.log(-1, active_set)
+        active_set = self._update_active_set(active_set, active_set)
         rng = random.Random(42)
 
         for d in range(self._depth):
@@ -286,6 +289,12 @@ class BeamSearch(Optimizer):
                 if len(offspring) > self._n_mutations:
                     logger.warning(f"Mutate() exceeded max mutations ({self._n_mutations}) with len {len(offspring)}.")
                 mutations += [x.with_parent(parent) for x in offspring]
+
+            if self._max_evals:
+                n_evals = len(self._state["fit"])
+                if len(mutations) + n_evals > self._max_evals:
+                    mutations = mutations[: self._max_evals - n_evals]
+                    logger.warning(f"Max iterations reached. Truncating mutations to {len(mutations)}.")
 
             if not mutations:
                 break

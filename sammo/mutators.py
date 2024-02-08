@@ -87,10 +87,12 @@ class Mutator(abc.ABC):
         if self._starting_prompt is None:
             raise ValueError("In order to use search, this method needs to be overriden or starting prompt passed.")
 
-        candidates = get_points_from_search_space(
-            self._starting_prompt, n_initial_candidates, self._sample_for_init_candidates, self._seed
+        candidates, names = get_points_from_search_space(
+            self._starting_prompt, n_initial_candidates, self._sample_for_init_candidates, self._seed, return_names=True
         )
-        return [MutatedCandidate("init", c) for c in candidates]
+        if not names:
+            names = ["init"] * len(candidates)
+        return [MutatedCandidate(name, c) for name, c in zip(names, candidates)]
 
 
 class SyntaxTreeMutator(Mutator):

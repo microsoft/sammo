@@ -13,7 +13,11 @@ __all__ = ["one_of", "many_of", "permutate", "optional", "get_points_from_search
 
 
 def get_points_from_search_space(
-    search_space: Callable | Component | list | dict, n_points: int, sample: bool = False, seed: int = 42
+    search_space: Callable | Component | list | dict,
+    n_points: int,
+    sample: bool = False,
+    seed: int = 42,
+    return_names: bool = False,
 ) -> list[Component]:
     """Materialize a number of points from a search space.
 
@@ -21,7 +25,9 @@ def get_points_from_search_space(
     :param n_points: Number of points to materialize.
     :param sample: Whether to sample from the search space or enumerate and return first `n_points`.
     :param seed: Random seed for sampling.
+    :param return_names: Whether to return the names of the points.
     """
+    names = list()
     if isinstance(search_space, list):
         search_space = pg.list(search_space)
     elif isinstance(search_space, dict):
@@ -33,6 +39,7 @@ def get_points_from_search_space(
             num_examples=n_points,
             algorithm=pg.geno.Random(seed) if sample else None,
         ):
+            names.append(context.__closure__[0].cell_contents.to_dict("name_or_id", "literal"))
             with context():
                 candidates.append(search_space())
     elif search_space.is_deterministic:
@@ -41,7 +48,10 @@ def get_points_from_search_space(
         candidates = list(pg.random_sample(search_space, n_points, seed=seed))
     else:
         candidates = list(pg.iter(search_space, n_points))
-    return candidates
+    if return_names:
+        return candidates, names
+    else:
+        return candidates
 
 
 def get_first_point(search_space: Callable | Component | list | dict) -> Component:
