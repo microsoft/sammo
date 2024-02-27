@@ -1,5 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+import abc
+import time
 from abc import abstractmethod
 import asyncio
 from collections.abc import MutableMapping
@@ -8,6 +10,8 @@ import logging
 import os
 import pathlib
 
+import aiohttp
+import orjson
 from beartype import beartype
 from beartype.typing import Literal
 import openai
@@ -35,7 +39,7 @@ class MockedRunner:
 
 
 @beartype
-class OpenAIBaseRunner(Runner):
+class BaseRunner(Runner):
     """Base class for OpenAI API runners.
 
     :param model_id: Model specifier as listed in the API documentation.
@@ -49,17 +53,10 @@ class OpenAIBaseRunner(Runner):
     :param max_context_window: The maximum number of tokens to use for the context window. Defaults to None, which
     means that the maximum context window is used.
     :param max_timeout_retries: The maximum number of retries to attempt when a timeout occurs.
+    :param use_cached_timeouts: Whether to use cached timeouts.
     """
 
-    ERRORS = (
-        openai.error.RateLimitError,
-        openai.error.APIConnectionError,
-        openai.error.APIError,
-        openai.error.Timeout,
-        openai.error.TryAgain,
-        openai.error.ServiceUnavailableError,
-        asyncio.TimeoutError,
-    )
+    RETRY_ERRORS = ()
 
     def __init__(
         self,
@@ -73,14 +70,15 @@ class OpenAIBaseRunner(Runner):
         retry_on: tuple | str = "default",
         timeout: float | int = 60,
         max_timeout_retries: int = 1,
+        use_cached_timeouts: bool = True,
     ):
         super().__init__()
 
         if isinstance(api_config, dict):
-            self._oai_config = dict(api_config)
+            self._api_config = dict(api_config)
         elif isinstance(api_config, pathlib.Path):
             with api_config.open() as api_config_file:
-                self._oai_config = json.load(api_config_file)
+                self._api_config = json.load(api_config_file)
         if isinstance(rate_limit, Throttler):
             self._throttler = rate_limit
         elif isinstance(rate_limit, AtMost):
@@ -91,12 +89,9 @@ class OpenAIBaseRunner(Runner):
             self._throttler = Throttler(limits=rate_limit)
 
         self._model_id = model_id
-        if self._oai_config.get("api_type", "") == "azure":
-            self._oai_config["deployment_id"] = self._model_id
-        else:
-            self._oai_config["model"] = self._model_id
+
         if equivalence_class == "major":
-            self._equivalence_class = self.get_equivalence_class(self._model_id)
+            self._equivalence_class = self._get_equivalence_class(self._model_id)
         elif equivalence_class == "exact":
             self._equivalence_class = self._model_id
         else:
@@ -106,24 +101,16 @@ class OpenAIBaseRunner(Runner):
             self._cache = PersistentDict(cache)
         else:
             self._cache = cache
-        self._retry_on = self.ERRORS if retry_on == "default" else retry_on
+        self._retry_on = self.RETRY_ERRORS if retry_on == "default" else retry_on
         self._max_retries = max_retries
         self._semaphores = dict()
         self._timeout = timeout
         self._max_timeout_retries = max_timeout_retries
         self._max_context_window = max_context_window
+        self._use_cached_timeouts = use_cached_timeouts
+        self._post_init()
 
-    @classmethod
-    def get_equivalence_class(cls, model_id: str) -> str:
-        if model_id.startswith("gpt-3"):
-            return "gpt-3"
-        elif model_id.startswith("gpt-4"):
-            return "gpt-4"
-        else:
-            return model_id
-
-    async def _execute_request(self, request):
-        fingerprint = request.fingerprint
+    async def _execute_request(self, request, fingerprint, priority=0):
         if fingerprint in self._semaphores:
             sem = self._semaphores[fingerprint]
         else:
@@ -132,38 +119,104 @@ class OpenAIBaseRunner(Runner):
         async with sem:
             # important: ensure that we do not run the same prompt concurrently
             if self._cache is not None and fingerprint in self._cache:
-                return request.with_cached_result(json=self._cache[fingerprint])
-            else:
-                timeout_retries = 0
-                for cur_try in range(self._max_retries):
-                    retry_on = self._retry_on if cur_try < self._max_retries - 1 else tuple()
+                record = self._cache[fingerprint]
+                if self._use_cached_timeouts and isinstance(record, dict) and "sammo.error.timeout" in record:
+                    # re-raise the timeout error if the timeout is the same or higher
+                    if self._timeout <= record["sammo.error.timeout"]["timeout"]:
+                        raise TimeoutError("Cached timeout")
+                else:
+                    json = self._cache[fingerprint]
+                    response_obj = self._to_llm_result(request, json, fingerprint)
+                    self._costs += response_obj.costs
+                    return response_obj
 
-                    try:
-                        job_handle = await self._throttler.wait_in_line(request.priority)
-                        async with asyncio.timeout(self._timeout):
-                            value = await request.with_result(retries=cur_try)
-                        self._throttler.update_job_stats(job_handle, cost=value.costs.total)
-                        if self._cache is not None:
-                            self._cache[fingerprint] = value.json
-                        return value
-                    except TimeoutError:
-                        timeout_retries += 1
-                        self._throttler.update_job_stats(job_handle, failed=True, cost=0)
-                        logger.error(f"TimeoutError: {request.params}")
-                        if timeout_retries > self._max_timeout_retries:
-                            raise TimeoutError
-                        continue
-                    except retry_on as e:
-                        qualified_name = f"{type(e).__module__}.{type(e).__name__}".replace("builtins.", "")
-                        self._throttler.update_job_stats(job_handle, failed=True, cost=0)
-                        logger.error(f"{qualified_name}: {str(e).split(' Contact us')[0]}")
-                        continue
+            n_timeouts = 0
+            for cur_try in range(self._max_retries):
+                retry_on = self._retry_on if cur_try < self._max_retries - 1 else tuple()
 
-                raise RuntimeError(f"Could not get completion for {request.params}")
+                try:
+                    job_handle = await self._throttler.wait_in_line(priority)
+                    async with asyncio.timeout(self._timeout):
+                        json = await self._call_backend(request)
+                    response_obj = self._llm_result(request, json, fingerprint)
+                    response_obj.retries = cur_try
+                    self._throttler.update_job_stats(job_handle, cost=response_obj.costs.total)
+                    self._costs += response_obj.costs
+                    if self._cache is not None:
+                        self._cache[fingerprint] = json
+                    return response_obj
+                except TimeoutError:
+                    n_timeouts += 1
+                    self._throttler.update_job_stats(job_handle, failed=True, cost=0)
+                    logger.error(f"TimeoutError: {request}")
+                    if n_timeouts > self._max_timeout_retries:
+                        self._cache[fingerprint] = {
+                            "sammo.error.timeout": {"retries": cur_try, "timeout": self._timeout}
+                        }
+                        raise TimeoutError
+                    continue
+                except retry_on as e:
+                    qualified_name = f"{type(e).__module__}.{type(e).__name__}".replace("builtins.", "")
+                    self._throttler.update_job_stats(job_handle, failed=True, cost=0)
+                    logger.error(f"{qualified_name}: {str(e).split(' Contact us')[0]}")
+                    continue
 
+            raise RuntimeError(f"Could not get completion for {request.params}")
+
+    def _llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
+        result = self._to_llm_result(request, json_data, fingerprint)
+        result.fingerprint = fingerprint
+        result.extra_data = json_data
+        return result
+
+    @abstractmethod
+    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
+        pass
+
+    @abstractmethod
+    async def _call_backend(self, request: dict) -> dict:
+        pass
+
+    @classmethod
+    def _get_equivalence_class(cls, model_id: str) -> str:
+        return model_id
+
+    def _post_init(self):
+        pass
+
+
+class OpenAIBaseRunner(BaseRunner):
+    RETRY_ERRORS = (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError)
+
+    @classmethod
+    def _get_equivalence_class(cls, model_id: str) -> str:
+        if model_id.startswith("gpt-3"):
+            return "gpt-3"
+        elif model_id.startswith("gpt-4"):
+            return "gpt-4"
+        else:
+            return model_id
+
+    def _post_init(self):
+        if self._api_config.get("api_type", "") == "azure":
+            self._api_config["deployment_id"] = self._model_id
+        else:
+            self._api_config["model"] = self._model_id
+
+        self._client = openai.AsyncOpenAI(api_key=self._api_config["api_key"])
+
+
+class OpenAIChat(OpenAIBaseRunner):
     async def generate_text(
-        self, prompt: str, max_tokens: int | None = None, randomness: float | None = 0, seed: int = 0, priority: int = 0
-    ) -> dict:
+        self,
+        prompt: str,
+        max_tokens: int | None = None,
+        randomness: float | None = 0,
+        seed: int = 0,
+        priority: int = 0,
+        system_prompt: str | None = None,
+        history: list[dict] | None = None,
+    ) -> LLMResult:
         """Calls the chat endpoint of the OAI model.
 
         Args:
@@ -179,78 +232,7 @@ class OpenAIBaseRunner(Runner):
             and "retries" (the number of retries).
         """
 
-
-class RawApiRequest:
-    def __init__(self, params: dict, seed: int, model_id: str, priority: int = 0, extra_params: dict = None):
-        self.params = params
-        self.seed = seed
-        self.model_id = model_id
-        self.priority = priority
-        self.json = None
-        self.retries = None
-        self.extra_params = extra_params or dict()
-
-    def with_cached_result(self, json):
-        self.json = json
-        return self
-
-    async def with_result(self, retries=None):
-        self.json = await self._execute()
-        self.retries = retries
-        return self
-
-    @property
-    @abstractmethod
-    def fingerprint_obj(self) -> dict:
-        pass
-
-    @property
-    def fingerprint(self):
-        return serialize_json(self.fingerprint_obj)
-
-    @property
-    @abstractmethod
-    def costs(self) -> Costs:
-        pass
-
-
-class OpenAIChatRequest(RawApiRequest):
-    @property
-    def fingerprint_obj(self) -> dict:
-        return {"seed": self.seed, "generative_model_id": self.model_id, **self.params}
-
-    @property
-    def costs(self) -> Costs:
-        return Costs(
-            input_costs=self.json["usage"].get("prompt_tokens", 0),
-            output_costs=self.json["usage"].get("completion_tokens", 0),
-        )
-
-    async def _execute(self) -> dict:
-        return (await openai.ChatCompletion.acreate(**self.params, **self.extra_params)).to_dict_recursive()
-
-
-class OpenAIChat(OpenAIBaseRunner):
-    """Provides simplified access to the (newer) chat-based OAI models"""
-
-    async def generate_text(
-        self,
-        prompt: str,
-        max_tokens: int | None = None,
-        randomness: float | None = 0,
-        seed: int = 0,
-        priority: int = 0,
-        system_prompt: str | None = None,
-        history: list[dict] | None = None,
-    ) -> LLMResult:
-        """
-        Use the Chat API to generate text.
-
-        :param system_prompt: The prompt to use to prime the system response.
-        :type system_prompt: str, optional
-        """
         messages = []
-
         if system_prompt is not None:
             messages = [{"role": "system", "content": system_prompt}]
             if history:
@@ -258,27 +240,69 @@ class OpenAIChat(OpenAIBaseRunner):
         if history is not None:
             messages = messages + history
         messages += [{"role": "user", "content": prompt}]
-        result = await self._execute_request(
-            OpenAIChatRequest(
-                params=dict(
-                    messages=messages, max_tokens=self._max_context_window or max_tokens, temperature=randomness
-                ),
-                extra_params=self._oai_config,
-                model_id=self._equivalence_class,
-                seed=seed,
-                priority=priority,
-            )
-        )
-        self._costs += result.costs
-        prompt_logger.debug(
-            f"\n\n\nAPI call (seed={seed}, randomness={randomness}):\n{prompt} \n->\n\n{result.json['choices'][0]['message']['content']}"
+        request = dict(messages=messages, max_tokens=self._max_context_window or max_tokens, temperature=randomness)
+        fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
+
+        return await self._execute_request(request, fingerprint, priority)
+
+    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
+        prompt_logger.debug(f"\n\n\nAPI call:\n->\n\n{json_data['choices'][0]['message']['content']}")
+        return LLMResult(
+            json_data["choices"][0]["message"]["content"],
+            history=request["messages"] + [json_data["choices"][0]["message"]],
+            costs=self._extract_costs(json_data),
         )
 
-        return LLMResult(
-            result.json["choices"][0]["message"]["content"],
-            costs=result.costs,
-            history=messages + [result.json["choices"][0]["message"]],
-            retries=result.retries,
-            extra_data=result.json | {"prompt_id": result.fingerprint},
-            fingerprint=result.fingerprint,
+    @staticmethod
+    def _extract_costs(json_data: dict) -> dict:
+        return Costs(
+            input_costs=json_data["usage"].get("prompt_tokens", 0),
+            output_costs=json_data["usage"].get("completion_tokens", 0),
         )
+
+    async def _call_backend(self, request: dict) -> dict:
+        return (await self._client.chat.completions.create(**request, model=self._model_id)).model_dump()
+
+
+class OpenAIEmbedding(OpenAIChat):
+    async def generate_embedding(self, text: str | list[str], priority: int = 0) -> LLMResult:
+        if isinstance(text, list) and len(text) > 2048:
+            raise ValueError("Batch size must be below 2048.")
+        fingerprint = serialize_json({"embedding_model_id": self._equivalence_class, "input": text})
+        request = dict(input=text)
+        return await self._execute_request(request, fingerprint, priority)
+
+    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes):
+        return LLMResult([x["embedding"] for x in json_data["data"]], costs=self._extract_costs(json_data))
+
+    async def _call_backend(self, request: dict) -> dict:
+        return (await self._client.embeddings.create(**request, model=self._model_id)).model_dump()
+
+
+class DeepInfraEmbedding(OpenAIEmbedding):
+    BASE_URL = r"https://api.deepinfra.com/v1/inference/"
+
+    async def generate_embedding(self, text: str | list[str], priority: int = 0) -> LLMResult:
+        if isinstance(text, list) and len(text) > 2048:
+            raise ValueError("Batch size must be below 2048.")
+        elif not isinstance(text, list):
+            text = [text]
+        fingerprint = serialize_json({"embedding_model_id": self._equivalence_class, "inputs": text})
+        request = dict(inputs=text)
+        return await self._execute_request(request, fingerprint, priority)
+
+    async def _call_backend(self, request: dict) -> dict:
+        # let parent class handle timeouts
+        timeout = aiohttp.ClientTimeout(total=None)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            # todo: share session across multiple requests
+            async with session.post(
+                self.BASE_URL + self._model_id,
+                headers=dict(Authorization=f"Bearer {self._api_config['api_key']}"),
+                raise_for_status=True,
+                data=orjson.dumps(request),
+            ) as response:
+                return await response.json()
+
+    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes):
+        return LLMResult(json_data["embeddings"], costs=Costs(json_data["input_tokens"]))

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.1.1rc0"
+version = "0.1.2"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -21,7 +21,7 @@ jsonpath_ng = "^1.5"
 markdown-it-py = "^2.2"
 more-itertools = "^10.1"
 numpy = "^1.25"
-openai = "^0.27"
+openai = "^1.0"
 orjson = "^3.9"
 pybars3 = "^0.9"
 pyglove = "^0.4"

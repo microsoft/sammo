@@ -402,12 +402,14 @@ class EnumerativeSearch(Optimizer):
         max_candidates: int | None = None,
         n_evals_parallel: int = 2,
         mutate_from: Output | None = None,
+        random_state: int = 42,
     ):
         super().__init__(runner, search_space, objective, maximize)
         self._algorithm = algorithm
         self._max_trials = max_candidates
         self._n_evals_parallel = n_evals_parallel
         self._mutate_from = mutate_from
+        self._random_state = random_state
 
     async def afit_transform(
         self,
@@ -448,7 +450,13 @@ class EnumerativeSearch(Optimizer):
         running_tasks = list()
         total_minibatches = 0
         async with asyncio.TaskGroup() as tg:
-            for i, search_context in enumerate(pg.iter(traced_search_space, num_examples=self._max_trials)):
+            for i, search_context in enumerate(
+                pg.iter(
+                    traced_search_space,
+                    num_examples=self._max_trials,
+                    algorithm=pg.geno.Random(self._random_state) if self._algorithm == "random" else None,
+                ),
+            ):
                 with search_context():
                     current_point = self._search_space()
                 # todo: fix this in case of mutators that change the number of minibatches

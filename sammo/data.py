@@ -135,7 +135,7 @@ class DataTable(pg.JSONConvertible):
         **kwargs,
     ):
         if len(records) == 0:
-            return cls(**kwargs)
+            return cls(records, **kwargs)
 
         if input_fields is None:
             input_fields = [k for k in records[0].keys() if k not in output_fields]

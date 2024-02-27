@@ -16,6 +16,7 @@ from pathlib import Path
 from beartype.typing import Callable
 import filelock
 import orjson
+from pyglove import JSONConvertible
 
 from sammo.utils import CodeTimer
 from sammo.utils import serialize_json as serialize_json_obj
@@ -32,7 +33,7 @@ def serialize_json(obj):
         return serialize_json_obj(obj)
 
 
-class PersistentDict(MutableMapping):
+class PersistentDict(MutableMapping, JSONConvertible):
     """
     Implements a dictionary that is persisted to disk. Entries are appended to the end of the file, with later entries
     overwriting earlier ones. The file is read into memory on initialization to allow for fast lookups.
