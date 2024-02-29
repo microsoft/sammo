@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import abc
+import base64
+import re
 import time
 from abc import abstractmethod
 import asyncio
@@ -230,7 +232,6 @@ class OpenAIChat(OpenAIBaseRunner):
             Dictionary with keys "data" (the generated text), "cost" (the number of tokens used),
             and "retries" (the number of retries).
         """
-
         messages = []
         if system_prompt is not None:
             messages = [{"role": "system", "content": system_prompt}]
@@ -238,7 +239,11 @@ class OpenAIChat(OpenAIBaseRunner):
                 history = [x for x in history if x["role"] != "system"]
         if history is not None:
             messages = messages + history
-        messages += [{"role": "user", "content": prompt}]
+
+        # check for images in prompt
+        revised_prompt = self._post_process_prompt(prompt)
+        messages += [{"role": "user", "content": revised_prompt}]
+
         request = dict(messages=messages, max_tokens=self._max_context_window or max_tokens, temperature=randomness)
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
 
@@ -252,6 +257,9 @@ class OpenAIChat(OpenAIBaseRunner):
             costs=self._extract_costs(json_data),
         )
 
+    def _post_process_prompt(self, prompt: str):
+        return prompt
+
     @staticmethod
     def _extract_costs(json_data: dict) -> dict:
         return Costs(
@@ -261,6 +269,51 @@ class OpenAIChat(OpenAIBaseRunner):
 
     async def _call_backend(self, request: dict) -> dict:
         return (await self._client.chat.completions.create(**request, model=self._model_id)).model_dump()
+
+
+class OpenAIVisionChat(OpenAIChat):
+    def _post_init(self):
+        super()._post_init()
+        if self._max_context_window is None:
+            raise ValueError("Vision model needs explicit max_token_window value.")
+
+    def _post_process_prompt(self, prompt: str):
+        segmented_prompt = self.find_image_segments(prompt)
+        if len(segmented_prompt) == 1 and isinstance(segmented_prompt[0], str):
+            return prompt
+        else:
+            revised_prompt = list()
+            for segment in segmented_prompt:
+                if isinstance(segment, re.Match):
+                    revised_prompt.append(self.load_image(segment.group("src")))
+                else:
+                    revised_prompt.append({"type": "text", "text": segment})
+            return revised_prompt
+
+    @classmethod
+    def find_image_segments(cls, text):
+        matches = re.finditer(r"{{image (?P<src>[^}]+)}}", text, re.MULTILINE)
+        current = 0
+        parsed_segments = list()
+        for m in matches:
+            if m.start() > current:
+                parsed_segments.append(text[current : m.start()])
+            current = m.end()
+            parsed_segments.append(m)
+        if current < len(text) or len(text) == 0:
+            parsed_segments.append(text[current:])
+        return parsed_segments
+
+    @classmethod
+    def load_image(cls, img_src):
+        if img_src.startswith("https://") or img_src.startswith("http://"):
+            img_data = img_src
+        else:
+            file = pathlib.Path(img_src)
+            mediatype = "jpeg" if re.match(r"jpe?p", file.suffix[1:].lower()) else file.suffix[1:].lower()
+            with open(file, "rb") as image_file:
+                img_data = f"data:image/{mediatype};base64,{base64.b64encode(image_file.read()).decode('utf-8')}"
+        return {"type": "image_url", "image_url": {"url": img_data}}
 
 
 class OpenAIEmbedding(OpenAIChat):
