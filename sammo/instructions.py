@@ -1,10 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+import hashlib
 import json
+import math
 
-from beartype.typing import Literal
+import numpy as np
+from beartype.typing import Literal, MutableMapping
 from frozendict import frozendict
+import pyglove as pg
 
+from sammo.compactbars import CompactProgressBars
+from sammo.utils import sync
 from sammo.base import Component, LLMResult, Runner, TextResult, ScalarComponent
 from sammo.components import GenerateText
 from sammo.data import DataTable
@@ -184,6 +190,90 @@ class FewshotExamples(ScalarComponent):
         if self._formatted_data is None:
             self._formatted_data = context["data_formatter"].format_datatable(self._data[: self._n_examples])
         return LLMResult(self._formatted_data)
+
+
+class RandomFewshotExamples(FewshotExamples):
+    def __init__(
+        self,
+        data: DataTable,
+        n_examples: int | None = None,
+        name: str | None = None,
+        seed: int = 0,
+    ):
+        super().__init__(data, n_examples, name)
+        self._data = data.sample(len(data), seed=seed)
+
+
+class EmbeddingFewshotExamples(FewshotExamples):
+    MAX_BATCH_SIZE = 1000
+
+    def __init__(
+        self,
+        embedder: Runner,
+        data: DataTable,
+        n_examples: int | None = None,
+        name: str | None = None,
+        aggregate: Literal["roundrobin", "max"] = "roundrobin",
+        cache: MutableMapping | None = None,
+        filter_exact_matches: bool = True,
+        budget: Literal["absolute", "relative"] = "absolute",
+    ):
+        super().__init__(data, n_examples, name)
+        self._embedder = embedder
+        self._fingerprint = hashlib.md5(pg.to_json_str(embedder).encode("utf-8")).hexdigest()
+        self._aggregate = aggregate
+        self._index = cache or dict()
+        self._data = data
+        rendered = self._render(data)
+        self._filter_exact = filter_exact_matches
+        self._train_ids = dict(zip(rendered, range(len(rendered))))
+        self._train = sync(self._embed(rendered))
+        self._budget = budget
+
+    def _render(self, data: DataTable | list[dict]):
+        if isinstance(data, DataTable):
+            data = data.inputs.raw_values
+        return [str(x) for x in data]
+
+    async def _embed(self, rendered: list[str]) -> np.ndarray:
+        missing = [x for x in rendered if (self._fingerprint, x) not in self._index]
+        if missing:
+            if len(missing) > self.MAX_BATCH_SIZE:
+                embeddings = list()
+                pbar = CompactProgressBars().get("embedding minibatches", math.ceil(len(missing) / self.MAX_BATCH_SIZE))
+
+                for i in range(0, len(missing), self.MAX_BATCH_SIZE):
+                    embeddings += (await self._embedder.generate_embedding(missing[i : i + self.MAX_BATCH_SIZE])).value
+                    pbar.update()
+            else:
+                embeddings = (await self._embedder.generate_embedding(missing)).value
+
+            for key, value in zip(missing, embeddings):
+                self._index[(self._fingerprint, key)] = value
+        return np.asarray([self._index[(self._fingerprint, key)] for key in rendered])
+
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
+        input_rendered = self._render(context["data"]["inputs"])
+        input_embeddings = await self._embed(input_rendered)
+
+        scores = input_embeddings.dot(self._train.T)
+
+        if self._aggregate == "roundrobin":
+            idx = np.argsort(-scores, axis=1).flatten("F")
+        elif self._aggregate == "max":
+            idx = np.argsort(-scores.max(axis=0))
+        deduped_idx = idx[np.sort(np.unique(idx, return_index=True)[1])]
+        if self._filter_exact:
+            invalid = {self._train_ids[x] for x in input_rendered if x in self._train_ids}
+            deduped_idx = np.setdiff1d(deduped_idx, list(invalid), assume_unique=True)
+        if self._budget == "absolute":
+            budget = self._n_examples
+        else:
+            budget = self._n_examples * len(input_rendered)
+
+        top_k = deduped_idx[:budget].tolist()
+        formatted_data = context["data_formatter"].format_datatable(self._data[top_k])
+        return LLMResult(formatted_data)
 
 
 class InputData(ScalarComponent):

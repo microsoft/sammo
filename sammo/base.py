@@ -381,7 +381,14 @@ class Template(ScalarComponent):
         self._template = self._compile(template_text)
 
     @staticmethod
-    def _compile(template_text: str):
+    def _image(this, options=None):
+        if options is None:
+            return this.get("image", "")
+        else:
+            return f"{{{{image {options}}}}}"
+
+    @classmethod
+    def _compile(cls, template_text: str):
         return pybars.Compiler().compile(template_text)
 
     async def _call(self, runner: Runner, context: dict | None, dynamic_context: frozendict | None) -> TextResult:
@@ -398,7 +405,7 @@ class Template(ScalarComponent):
         kwargs = {k: self._unwrap_results(v) for k, v in kwargs.items()}
         if len(kwargs.get("inputs", list())) == 1:
             kwargs["input"] = kwargs["inputs"][0]
-        return self._template(kwargs)
+        return self._template(kwargs, helpers={"image": self._image})
 
     @property
     def text(self):
