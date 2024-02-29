@@ -200,11 +200,13 @@ class OpenAIBaseRunner(BaseRunner):
 
     def _post_init(self):
         if self._api_config.get("api_type", "") == "azure":
-            self._api_config["deployment_id"] = self._model_id
+            self._client = openai.AzureOpenAI(
+                api_version="2023-07-01-preview",
+                azure_endpoint=self._api_config["azure_endpoint"],
+                api_key=self._api_config["api_key"]
+            )
         else:
-            self._api_config["model"] = self._model_id
-
-        self._client = openai.AsyncOpenAI(api_key=self._api_config["api_key"])
+            self._client = openai.AsyncOpenAI(api_key=self._api_config["api_key"])
 
 
 class OpenAIChat(OpenAIBaseRunner):
