@@ -6,7 +6,7 @@ from frozendict import frozendict
 from sammo.dataformatters import PlainFormatter
 
 from sammo.data import DataTable
-from sammo.instructions_new import MetaPrompt, Section, Paragraph, InputData
+from sammo.instructions import MetaPrompt, Section, Paragraph, InputData
 from sammo.runners import MockedRunner
 
 
@@ -43,7 +43,7 @@ async def test_basic_render(render_as, expected):
 @pytest.mark.parametrize(
     "render_as,expected",
     [
-        ("markdown", '# A\nSome text.\n\n\n# B\nOther text.'),
+        ("markdown", "# A\nSome text.\n\n\n# B\nOther text."),
     ],
 )
 async def test_basic_render_text(render_as, expected):
