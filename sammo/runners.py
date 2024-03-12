@@ -420,4 +420,4 @@ class DeepInfraEmbedding(BaseRunner):
         return LLMResult(json_data["embeddings"], costs=Costs(json_data["input_tokens"]))
 
     def _get_headers(self):
-        return {"Authorization": f"Bearer {self._api_config['api_key']}"}
+        return {"Authorization": f"Bearer {self._api_config['api_key']}", "Content-Type": "application/json"}

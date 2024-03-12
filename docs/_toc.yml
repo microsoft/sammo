@@ -10,6 +10,9 @@ parts:
   - caption: Special Topics
     chapters:
     - glob: tutorials/special_topics/*
+  - caption: Extending SAMMO
+    chapters:
+    - glob: tutorials/extensions/*
   - caption: 📖 API Reference
     chapters:
     - file: api/sammo/sammo
