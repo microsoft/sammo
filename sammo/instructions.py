@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import hashlib
-import json
 import math
 
 import numpy as np
@@ -17,16 +16,38 @@ from sammo.data import DataTable
 from sammo.dataformatters import DataFormatter
 
 
-class Section(Component):
-    def __init__(self, name, content, id=None):
+class Renderer(Component):
+    def __init__(self, content, name: str | None = None):
         super().__init__(content, name)
-        self.id = id
-        self.name = name
         if not isinstance(content, list):
             content = [content]
         if not isinstance(self, Paragraph):
             content = [Paragraph(c) if isinstance(content, str) else c for c in content]
         self.content = content
+
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> dict:
+        depth = dynamic_context.get("depth", -1)
+        updated_context = frozendict({**dynamic_context, "depth": depth + 1})
+        children = self._unwrap_results(
+            [
+                await child(runner, context, updated_context) if isinstance(child, Component) else child
+                for child in self.content
+            ]
+        )
+
+        render_as = dynamic_context["render_as"]
+        if render_as == "xml":
+            return TextResult(self.render_as_xml(children, depth=depth))
+        elif render_as == "raw":
+            return TextResult(self.render_as_raw(children))
+        else:
+            return TextResult(self.render_as_markdown(children, depth=depth, alternative_headings="alt" in render_as))
+
+
+class Section(Renderer):
+    def __init__(self, name, content, id=None):
+        super().__init__(content, name)
+        self.id = id
 
     def static_text(self, sep="\n"):
         return "\n".join([v.static_text(sep) if hasattr(v, "static_text") else str(v) for v in self.content])
@@ -34,30 +55,47 @@ class Section(Component):
     def set_static_text(self, text):
         return self.rebind({"content": text})
 
-    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> dict:
-        return {
-            "type": self.__class__.__name__.lower(),
-            "id": self.id,
-            "name": self.name,
-            "content": self._unwrap_results(
-                [
-                    await child(runner, context, dynamic_context) if isinstance(child, Component) else child
-                    for child in self.content
-                ]
-            ),
-        }
+    def render_as_markdown(self, data, alternative_headings=False, depth=0, **kwargs):
+        UNDERLINES = ["=", "-"]
+        md_string = ""
+        title = self._name
+        if alternative_headings:
+            if depth > 2:
+                raise ValueError("Alternative headings are only supported up to depth 2.")
+            md_string += f"{title}\n{UNDERLINES[depth] * len(title)}\n"
+        else:
+            md_string += f"{'#' * (depth + 1)} {title}\n"
+        return md_string + "\n".join(data) + "\n"
 
+    def render_as_xml(self, content, depth=0):
+        kind = self.__class__.__name__.lower()
+        outer_element = lambda x: f"\n<{kind}>{x}\n</{kind}>"
+        xml_element_w_tag = lambda x, tag: f"\n<{tag}>{x}</{tag}>"
+
+        inner = ""
+        if hasattr(self, "id"):
+            inner += xml_element_w_tag(self.id, "id")
+
+        inner += xml_element_w_tag(self._name, "name")
+        return outer_element(inner + "\n".join(content))
+
+    def render_as_raw(self, content):
+        return "".join(content)
 
 class Paragraph(Section):
     def __init__(self, content, id=None):
         super().__init__(None, content, id)
+        self._name = None
+
+    def render_as_markdown(self, data, alternative_headings=False, depth=0):
+        return "\n".join(data) + "\n\n"
 
 
-class MetaPrompt(Component):
+class MetaPrompt(Renderer):
     def __init__(
         self,
         structure: list[Paragraph | Section],
-        render_as: Literal["raw", "json", "xml", "markdown", "markdown-alt"] = "markdown",
+        render_as: Literal["raw", "xml", "markdown", "markdown-alt"] = "markdown",
         data_formatter: DataFormatter | None = None,
         name: str | None = None,
         seed: int = 0,
@@ -66,110 +104,29 @@ class MetaPrompt(Component):
 
         self._render_as = render_as
         self._data_formatter = data_formatter
-        self._structure = structure
         self._seed = seed
+
+    def render_as_markdown(self, data, alternative_headings=False, depth=0):
+        return "\n".join(data).strip()
+
+    def render_as_xml(self, data, depth=0):
+        return "\n".join(data).strip()
+
+    def render_as_raw(self, data):
+        return "".join(data).strip()
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
         context["data_formatter"] = self._data_formatter
-        filled_out_structure = [await child(runner, context, dynamic_context) for child in self._structure]
-        return TextResult(self._render(filled_out_structure))
+        if dynamic_context is None:
+            dynamic_context = dict()
+        dynamic_context = frozendict({**dynamic_context, "render_as": self._render_as})
+        return await super()._call(runner, context, dynamic_context)
 
     def with_extractor(self, on_error: Literal["raise", "empty_result"] = "raise"):
         if self._data_formatter is not None:
             return self._data_formatter.get_extractor(GenerateText(self), on_error=on_error)
         else:
             raise ValueError("Without a given data_formatter, responses must be parsed manually.")
-
-    def _render(self, structure):
-        if self._render_as == "raw":
-            return "".join(["".join(v["content"]) for v in structure]).strip()
-        elif self._render_as == "json":
-            return self.render_as_json(structure).strip()
-        elif self._render_as.startswith("xml"):
-            return self.render_as_xml(structure, use_attr=self._render_as == "xml-attr").strip()
-        elif self._render_as.startswith("markdown"):
-            return self.render_as_markdown(structure, alternative_headings="alt" in self._render_as).strip()
-        else:
-            return NotImplementedError()
-
-    @classmethod
-    def render_as_json(cls, data, is_key=False):
-        """
-        If it detects JSON in a string, it tries to output it unescaped
-        :param data:
-        :param is_key:
-        :return:
-        """
-        if isinstance(data, dict):
-            return (
-                "{"
-                + ", ".join([f"{cls.render_as_json(k, is_key=True)}:{cls.render_as_json(v)}" for k, v in data.items()])
-                + "}"
-            )
-        elif isinstance(data, list):
-            return f"[{', '.join([cls.render_as_json(x) for x in data])}]"
-        elif isinstance(data, str) and data.startswith("{") or data.startswith("["):
-            return data
-        elif is_key:
-            return json.dumps(str(data))
-        else:
-            return json.dumps(data)
-
-    @classmethod
-    def render_as_markdown(cls, data, alternative_headings=False, depth=0):
-        UNDERLINES = ["=", "-"]
-        md_string = ""
-        if isinstance(data, dict):
-            kind, attributes = data["type"], [k for k in data.keys() if k not in ["type", "content"]]
-            content = data["content"]
-            if kind == "section":
-                title = data["name"]
-                if alternative_headings:
-                    if depth > 2:
-                        raise ValueError("Alternative headings are only supported up to depth 2.")
-                    md_string += f"{title}\n{UNDERLINES[depth] * len(title)}\n"
-                else:
-                    md_string += f"{'#' * (depth + 1)} {title}\n"
-            if isinstance(content, str):
-                md_string += content
-            else:
-                md_string += cls.render_as_markdown(content, alternative_headings, depth=depth + 1)
-            if kind == "paragraph":
-                md_string += "\n"
-        elif isinstance(data, list):
-            md_string += "\n".join([cls.render_as_markdown(v, alternative_headings, depth=depth) for v in data])
-        else:
-            md_string += str(data) + "\n"
-        return md_string
-
-    @classmethod
-    def render_as_xml(cls, data, depth=0, use_attr=True):
-        if isinstance(data, dict):
-            kind, attributes = data["type"], [k for k in data.keys() if k not in ["type", "content"]]
-            content = data["content"]
-            xml_element = lambda x: f"\n<{kind}>{x}\n</{kind}>"
-            xml_element_w_tag = lambda x, tag: f"\n<{tag}>{x}</{tag}>"
-            attri = lambda y: " ".join([f'{k}="{v}"' for k, v in y.items() if v is not None])
-            xml_element_w_attr = lambda x, y: f"\n<{kind} {attri(y)}>{x}\n</{kind}>"
-
-            if isinstance(content, str):
-                return xml_element(content)
-            elif use_attr:
-                attr = {k: v for k, v in data.items() if k not in ["type", "content"]}
-                return xml_element_w_attr(cls.render_as_xml(content, depth + 1, use_attr), attr)
-            else:
-                nested = list()
-                inner = ""
-                for key, value in data.items():
-                    if key == "content":
-                        inner = cls.render_as_xml(content, depth + 1, use_attr)
-                    elif key not in ["type"]:
-                        nested.append(xml_element_w_tag(value, key))
-                return xml_element("".join(nested + [inner]))
-        elif isinstance(data, list):
-            return "\n".join([cls.render_as_xml(x, depth, use_attr) for x in data])
-        else:
-            return str(data)
 
 
 class FewshotExamples(ScalarComponent):

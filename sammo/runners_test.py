@@ -1,16 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-"""Testing the Costs class"""
-import time
+
 from asyncio import TaskGroup
-from collections.abc import MutableMapping
-from unittest.mock import AsyncMock, patch, Mock, MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding
 from sammo.base import Costs
 from sammo.store import InMemoryDict
+
+"""Testing the Costs class"""
 
 
 def test_costs_addition():
@@ -42,36 +42,36 @@ def test_costs_total():
 
 @pytest.fixture
 def basic():
-    return AsyncMock(
-        return_value=Mock(
-            **{
-                "model_dump.return_value": {
-                    "usage": {"total_tokens": 1, "prompt_tokens": 2, "completion_tokens": 3},
-                    "choices": [{"message": {"content": "test"}}],
-                }
-            }
-        )
+    mock = MagicMock()
+    coro = MagicMock()
+    coro.post.return_value.__aenter__.return_value.json = AsyncMock(
+        return_value={
+            "usage": {"total_tokens": 1, "prompt_tokens": 2, "completion_tokens": 3},
+            "choices": [{"message": {"content": "test"}}],
+        }
     )
+    mock.return_value.__aenter__.return_value = coro
+    return mock
 
 
 @pytest.fixture
 def basic_embedding():
-    return AsyncMock(
-        return_value=Mock(
-            **{
-                "model_dump.return_value": {
-                    "usage": {"total_tokens": 1, "prompt_tokens": 2, "completion_tokens": 3},
-                    "data": [{"embedding": [0.1, 0.2]}, {"embedding": [0.3, 0.4]}],
-                }
-            }
-        )
+    mock = MagicMock()
+    coro = MagicMock()
+    coro.post.return_value.__aenter__.return_value.json = AsyncMock(
+        return_value={
+            "usage": {"total_tokens": 1, "prompt_tokens": 2, "completion_tokens": 3},
+            "data": [{"embedding": [0.1, 0.2]}, {"embedding": [0.3, 0.4]}],
+        }
     )
+    mock.return_value.__aenter__.return_value = coro
+    return mock
 
 
 @pytest.mark.asyncio
 async def test_generate_text(basic):
     runner = OpenAIChat(model_id="gpt-4", api_config={"api_key": "test"}, cache=None)
-    runner._client.chat.completions.create = basic
+    runner._get_session = basic
     result = await runner.generate_text(prompt="test prompt")
     assert result.value == "test"
 
@@ -79,7 +79,7 @@ async def test_generate_text(basic):
 @pytest.mark.asyncio
 async def test_parallel_identical_calls(basic):
     runner = OpenAIChat(model_id="gpt-4", api_config={"api_key": "test"}, rate_limit=10, cache=InMemoryDict())
-    runner._client.chat.completions.create = basic
+    runner._get_session = basic
     async with TaskGroup() as g:
         for _ in range(10):
             g.create_task(runner.generate_text(prompt="test prompt", seed=0))
@@ -90,27 +90,23 @@ async def test_parallel_identical_calls(basic):
 @pytest.mark.asyncio
 async def test_system_message(basic):
     runner = OpenAIChat(model_id="gpt-4", api_config={"api_key": "test"}, cache=None)
-    runner._client.chat.completions.create = basic
+    runner._get_session = basic
     await runner.generate_text(prompt="test prompt", system_prompt="test system")
-    assert basic.call_args[-1]["messages"][0] == {"role": "system", "content": "test system"}
+    assert basic.mock_calls[2].kwargs["json"]["messages"][0] == {"role": "system", "content": "test system"}
 
 
 @pytest.mark.asyncio
 async def test_cache(basic):
     cache = InMemoryDict()
-    start_time = time.perf_counter()
     runner = OpenAIChat(model_id="gpt-4", api_config={"api_key": "test"}, cache=cache)
-    end_time = time.perf_counter()
-    runner._client.chat.completions.create = basic
-    # time this
+    runner._get_session = basic
     await runner.generate_text(prompt="test prompt")
-    print(end_time - start_time)
     assert len(cache) == 1
 
 
 @pytest.mark.asyncio
 async def test_generate_embedding(basic_embedding):
     runner = OpenAIEmbedding(model_id="text-embedding-ada-002", api_config={"api_key": "test"}, cache=None)
-    runner._client.embeddings.create = basic_embedding
+    runner._get_session = basic_embedding
     result = await runner.generate_embedding("text")
     assert result.value == [[0.1, 0.2], [0.3, 0.4]]

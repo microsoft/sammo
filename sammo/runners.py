@@ -3,7 +3,7 @@
 import abc
 import base64
 import re
-import time
+import warnings
 from abc import abstractmethod
 import asyncio
 from collections.abc import MutableMapping
@@ -11,11 +11,12 @@ import json
 import logging
 import os
 import pathlib
-import httpx
+from contextlib import asynccontextmanager
+
+import aiohttp
 import orjson
 from beartype import beartype
 from beartype.typing import Literal
-import openai
 
 from sammo import PROMPT_LOGGER_NAME
 from sammo.base import LLMResult, Costs, Runner
@@ -25,6 +26,12 @@ from sammo.utils import serialize_json
 
 logger = logging.getLogger(__name__)
 prompt_logger = logging.getLogger(PROMPT_LOGGER_NAME)
+
+
+class RetriableError(Exception):
+    """Base class for retriable errors which should be raised by subclasses."""
+
+    pass
 
 
 class MockedRunner:
@@ -49,7 +56,7 @@ class BaseRunner(Runner):
     :param rate_limit: The rate limit to use. If an integer, it specifies max calls per second.
     :param max_retries: The maximum number of retries to attempt.
     :param debug_mode: Enable debug mode where queries do not get issued.
-    :param retry_on: Retry when any of these exceptions happen. Defaults to timeout and connection-based errors.
+    :param retry: Enable retrying when retriable error is raised (defined in each subclass).
     :param timeout: The timeout (in s) to use for a query.
     :param max_context_window: The maximum number of tokens to use for the context window. Defaults to None, which
     means that the maximum context window is used.
@@ -68,7 +75,7 @@ class BaseRunner(Runner):
         rate_limit: AtMost | list[AtMost] | Throttler | int = 2,
         max_retries: int = 50,
         max_context_window: int | None = None,
-        retry_on: tuple | str = "default",
+        retry: bool = True,
         timeout: float | int = 60,
         max_timeout_retries: int = 1,
         use_cached_timeouts: bool = True,
@@ -102,7 +109,7 @@ class BaseRunner(Runner):
             self._cache = PersistentDict(cache)
         else:
             self._cache = cache
-        self._retry_on = self.RETRY_ERRORS if retry_on == "default" else retry_on
+        self._retry_on = RetriableError if retry else tuple()
         self._max_retries = max_retries
         self._semaphores = dict()
         self._timeout = timeout
@@ -182,13 +189,27 @@ class BaseRunner(Runner):
     def _get_equivalence_class(cls, model_id: str) -> str:
         return model_id
 
+    @asynccontextmanager
+    async def _get_session(self):
+        async with aiohttp.ClientSession(
+            json_serialize=lambda x: orjson.dumps(x).decode(),
+            timeout=aiohttp.ClientTimeout(None, None, None),
+            headers=self._get_headers(),
+            raise_for_status=True,
+        ) as session:
+            yield session
+
+    def _get_headers(self):
+        return {}
+
     def _post_init(self):
         pass
 
+    def _rest_url(self):
+        return (self._api_config.get("base_url", None) or self.BASE_URL) + self.SUFFIX
+
 
 class OpenAIBaseRunner(BaseRunner):
-    RETRY_ERRORS = (openai.RateLimitError, openai.APIConnectionError, openai.InternalServerError)
-
     @classmethod
     def _get_equivalence_class(cls, model_id: str) -> str:
         if model_id.startswith("gpt-3"):
@@ -198,18 +219,28 @@ class OpenAIBaseRunner(BaseRunner):
         else:
             return model_id
 
-    def _post_init(self):
-        if self._api_config.get("api_type", "") == "azure":
-            self._client = openai.AzureOpenAI(
-                api_version="2023-07-01-preview",
-                azure_endpoint=self._api_config["azure_endpoint"],
-                api_key=self._api_config["api_key"]
-            )
-        else:
-            self._client = openai.AsyncOpenAI(api_key=self._api_config["api_key"])
+    async def _call_backend(self, request: dict) -> dict:
+        async with self._get_session() as session:
+            try:
+                async with session.post(
+                    self._rest_url(),
+                    json=request | {"model": self._model_id},
+                ) as response:
+                    return await response.json()
+            except aiohttp.ClientResponseError as e:
+                if e.status in [429, 500, 503]:
+                    raise RetriableError(f"Server error: {e.status} {e.message}") from e
+                else:
+                    raise e
+
+    def _get_headers(self):
+        return {"Authorization": f"Bearer {self._api_config['api_key']}"}
 
 
 class OpenAIChat(OpenAIBaseRunner):
+    BASE_URL = "https://api.openai.com/v1"
+    SUFFIX = "/chat/completions"
+
     async def generate_text(
         self,
         prompt: str,
@@ -257,6 +288,7 @@ class OpenAIChat(OpenAIBaseRunner):
             json_data["choices"][0]["message"]["content"],
             history=request["messages"] + [json_data["choices"][0]["message"]],
             costs=self._extract_costs(json_data),
+            request_text=request["messages"][-1]["content"],
         )
 
     def _post_process_prompt(self, prompt: str):
@@ -269,8 +301,33 @@ class OpenAIChat(OpenAIBaseRunner):
             output_costs=json_data["usage"].get("completion_tokens", 0),
         )
 
-    async def _call_backend(self, request: dict) -> dict:
-        return (await self._client.chat.completions.create(**request, model=self._model_id)).model_dump()
+
+class AzureMixIn:
+    """Mix-in class for Azure API runners.
+
+    :param api_config: The path to the API config file or a dictionary containing the API information.
+    Should be of the form: {'api_key': ??, 'endpoint': 'https://??.openai.azure.com/', 'deployment_id': ??}.
+    """
+
+    def _post_init(self):
+        if not "endpoint" in self._api_config:
+            raise ValueError("Azure API needs an endpoint.")
+        if not "deployment_id" in self._api_config:
+            raise ValueError("Azure API needs a deployment_id.")
+        if not "api_version" in self._api_config:
+            warnings.warn("API Version not given, assuming " "2023-05-15" ".", UserWarning)
+            self._api_config["api_version"] = "2023-05-15"
+        if self._api_config["endpoint"].endswith("/"):
+            self._api_config["endpoint"] = self._api_config["endpoint"][:-1]
+
+    def _get_headers(self):
+        return {"api-key": self._api_config["api_key"], "Content-Type": "application/json"}
+
+    def _rest_url(self):
+        return (
+            f"{self._api_config['endpoint']}/openai/deployments/{self._api_config['deployment_id']}"
+            f"/{self.SCENARIO}?api-version={self._api_config['api_version']}"
+        )
 
 
 class OpenAIVisionChat(OpenAIChat):
@@ -319,6 +376,8 @@ class OpenAIVisionChat(OpenAIChat):
 
 
 class OpenAIEmbedding(OpenAIChat):
+    SUFFIX = "/embeddings"
+
     async def generate_embedding(self, text: str | list[str], priority: int = 0) -> LLMResult:
         if isinstance(text, list) and len(text) > 2048:
             raise ValueError("Batch size must be below 2048.")
@@ -329,26 +388,21 @@ class OpenAIEmbedding(OpenAIChat):
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes):
         return LLMResult([x["embedding"] for x in json_data["data"]], costs=self._extract_costs(json_data))
 
-    async def _call_backend(self, request: dict) -> dict:
-        return (await self._client.embeddings.create(**request, model=self._model_id)).model_dump()
+
+class AzureChat(AzureMixIn, OpenAIChat):
+    SCENARIO = "chat/completions"
+
+
+class AzureVisionChat(AzureMixIn, OpenAIVisionChat):
+    SCENARIO = "chat/completions"
+
+
+class AzureEmbedding(AzureMixIn, OpenAIEmbedding):
+    SCENARIO = "embeddings"
 
 
 class DeepInfraEmbedding(BaseRunner):
     BASE_URL = r"https://api.deepinfra.com/v1/inference/"
-
-    def _post_init(self):
-        self._client = httpx.AsyncClient()
-
-    def __del__(self):
-        # somewhat hacky way to close the client
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            return
-        if loop.is_running():
-            loop.create_task(self._client.aclose())
-        else:
-            loop.run_until_complete(self._client.aclose())
 
     async def generate_embedding(self, text: str | list[str], priority: int = 0) -> LLMResult:
         if isinstance(text, list) and len(text) > 2048:
@@ -359,13 +413,11 @@ class DeepInfraEmbedding(BaseRunner):
         request = dict(inputs=text)
         return await self._execute_request(request, fingerprint, priority)
 
-    async def _call_backend(self, request: dict) -> dict:
-        response = await self._client.post(
-            self.BASE_URL + self._model_id,
-            headers=dict(Authorization=f"Bearer {self._api_config['api_key']}"),
-            data=orjson.dumps(request),
-        )
-        return response.raise_for_status().json()
+    def _rest_url(self):
+        return f"{self.BASE_URL}{self._model_id}"
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes):
         return LLMResult(json_data["embeddings"], costs=Costs(json_data["input_tokens"]))
+
+    def _get_headers(self):
+        return {"Authorization": f"Bearer {self._api_config['api_key']}"}
