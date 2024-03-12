@@ -212,7 +212,11 @@ class CompiledQuery:
             if attribute.lower() == "type":
                 selector = lambda k, v: isinstance(v, value)
             else:
-                selector = lambda k, v: hasattr(v, 'sym_hasattr') and v.sym_hasattr(attribute) and v.sym_get(attribute) == value
+                selector = (
+                    lambda k, v: hasattr(v, "sym_hasattr")
+                    and v.sym_hasattr(attribute)
+                    and v.sym_get(attribute) == value
+                )
             return cls({"custom_selector": selector}, child_selector)
 
     def __repr__(self):
