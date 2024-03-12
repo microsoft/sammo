@@ -95,13 +95,13 @@ class Paragraph(Section):
 class MetaPrompt(Renderer):
     def __init__(
         self,
-        structure: list[Paragraph | Section],
+        child: list[Paragraph | Section] | Paragraph | Section,
         render_as: Literal["raw", "xml", "markdown", "markdown-alt"] = "markdown",
         data_formatter: DataFormatter | None = None,
         name: str | None = None,
         seed: int = 0,
     ):
-        super().__init__(structure, name)
+        super().__init__(child, name)
 
         self._render_as = render_as
         self._data_formatter = data_formatter
