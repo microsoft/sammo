@@ -82,6 +82,7 @@ class Section(Renderer):
     def render_as_raw(self, content):
         return "".join(content)
 
+
 class Paragraph(Section):
     def __init__(self, content, id=None):
         super().__init__(None, content, id)
