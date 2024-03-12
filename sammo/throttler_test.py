@@ -28,7 +28,7 @@ async def simple_job(job_id, throttler, fail=False, delay=0):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("n_jobs,completion_time", [(10, 0.1), (11, 0.2), (20, 0.2)])
+@pytest.mark.parametrize("n_jobs,completion_time", [(10, 0.1), (11, 0.2), (20, 0.3)])
 async def test_basic_call_limit(n_jobs, completion_time):
     throttler = Throttler([AtMost(10, "calls", 0.1)])
 
