@@ -3,7 +3,7 @@
 from unittest.mock import patch, mock_open, Mock
 import pytest
 from io import BytesIO
-from sammo.store import PersistentDict, InMemoryDict, serialize_json
+from sammo.store import PersistentDict, InMemoryDict, serialize_json, SqlLiteDict
 
 
 @pytest.mark.parametrize(
@@ -120,3 +120,13 @@ def test_persist(data, expected):
 )
 def test_fix_point(data):
     serialize_json(data) == serialize_json(serialize_json(data))
+
+
+def test_sqlite():
+    store = SqlLiteDict(None)
+    store["test"] = "Hello"
+    assert store["test"] == "Hello"
+    store["test"] = "World"
+    assert store["test"] == "World"
+    del store["test"]
+    assert "test" not in store

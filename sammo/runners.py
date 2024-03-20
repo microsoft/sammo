@@ -194,7 +194,6 @@ class BaseRunner(Runner):
         async with aiohttp.ClientSession(
             json_serialize=lambda x: orjson.dumps(x).decode(),
             timeout=aiohttp.ClientTimeout(None, None, None),
-            headers=self._get_headers(),
             raise_for_status=True,
         ) as session:
             yield session
@@ -225,6 +224,7 @@ class OpenAIBaseRunner(BaseRunner):
                 async with session.post(
                     self._rest_url(),
                     json=request | {"model": self._model_id},
+                    headers=self._get_headers(),
                 ) as response:
                     return await response.json()
             except aiohttp.ClientResponseError as e:

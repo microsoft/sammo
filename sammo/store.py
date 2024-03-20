@@ -13,6 +13,7 @@ import threading
 import warnings
 from pathlib import Path
 
+import diskcache
 from beartype.typing import Callable
 import filelock
 import orjson
@@ -211,3 +212,34 @@ class InMemoryDict(PersistentDict):
                     f.write(key)
                     f.write(b"\t")
                     f.write(orjson.dumps(value, option=orjson.OPT_APPEND_NEWLINE))
+
+
+class SqlLiteDict(PersistentDict):
+    """
+    Implements a dictionary that is persisted to disk a SQLite DB. It is a bit slower for shorter entries than using
+    PersistentDict which is all buffered in memory, but preferable when storing larger objects, such as vectors.
+
+    :param directory: path for the stored data. If none, uses a temporary directory.
+    """
+
+    def __init__(self, directory: os.PathLike | str | None = None):
+        self._filename = directory
+        self._dict = diskcache.Cache(directory, eviction_policy="none")
+
+    def vacuum(self) -> None:
+        pass
+
+    def _find(self, key):
+        return serialize_json(key)
+
+    def __contains__(self, key):
+        return self._find(key) in self._dict
+
+    def __setitem__(self, key, value):
+        self._dict[self._find(key)] = value
+
+    def __delitem__(self, key):
+        del self._dict[self._find(key)]
+
+    def to_json(self, **kwargs):
+        return {"_type": "SqlLiteDict", "filename": str(self._filename)}
