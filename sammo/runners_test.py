@@ -44,6 +44,7 @@ def test_costs_total():
 def basic():
     mock = MagicMock()
     coro = MagicMock()
+    coro.post.return_value.__aenter__.return_value.status = 200
     coro.post.return_value.__aenter__.return_value.json = AsyncMock(
         return_value={
             "usage": {"total_tokens": 1, "prompt_tokens": 2, "completion_tokens": 3},
@@ -58,6 +59,7 @@ def basic():
 def basic_embedding():
     mock = MagicMock()
     coro = MagicMock()
+    coro.post.return_value.__aenter__.return_value.status = 200
     coro.post.return_value.__aenter__.return_value.json = AsyncMock(
         return_value={
             "usage": {"total_tokens": 1, "prompt_tokens": 2, "completion_tokens": 3},
