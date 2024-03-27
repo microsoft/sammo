@@ -2,62 +2,41 @@
 
 Welcome, and thank you for contributing to the project!
 
-## Mcrosoft Contributor License Agreement
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit <https://cla.opensource.microsoft.com>.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-## Code of Conduct
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com>) with any additional questions or comments.
-
-## Submitting an Issue
-
-Please [search for your issue](https://github.com/microsoft/sammo/issues?q=is%3Aissue) before submitting a new one.
-
-If nothing relevant shows up, please do [open a new issue](https://github.com/microsoft/sammo/issues/new) and provide as much detail as you can (ie: OS, python version, data formats, etc). Outputs of commands, error logs, source code snippets, etc are welcomed and will help to trace down the issue. Questions are also welcomed as they provide an opportunity for us to improve the documentation.
-
 ## Setting up your dev environment
 
 This project uses [Poetry](https://python-poetry.org/) for project management. Some tasks have been standardized to execute via the [Poe](https://poethepoet.natn.io/) task runner.
 
 We recommend that you install Poetry using [pipx](https://pipx.pypa.io/stable/) so that it's isolated from the sammo codebase.
-
+### Step 1: Install poetry
 ```
 pipx install poetry
 ```
 
-Next, check out sammo:
+### Step 2: Create a separate environment
 
-```
-# assume HTTPS, adjust for SSH
-git clone https://github.com/microsoft/sammo.git
-cd sammo
-```
-
+#### Option 1: Let poetry create a venv
 Optional, but recommended: have poetry create a venv in the project folder rather than in its cache dir
 
 ```
 poetry config virtualenvs.in-project true --local
 ```
 
-Install the dev dependencies
+#### Option 2: Let poetry use a conda env
 
 ```
+conda create --name sammo  python=3.11
+conda activate sammo
+```
+
+Note: you can skip the `poetry run` prefix for the rest of the commands if you use a conda env.
+
+### Step 3: Install library and tooling
+Check out and install the dev dependencies
+```
+# assume HTTPS, adjust for SSH
+git clone https://github.com/microsoft/sammo.git
+cd sammo
 poetry install --with dev
-```
-
-Show the configured tasks available through the Poe runner:
-
-```
-poetry run poe
 ```
 
 Set up pre-commit hooks
@@ -66,6 +45,12 @@ Set up pre-commit hooks
 poetry run pre-commit install
 ```
 
+
+Show the configured tasks available through the Poe runner:
+
+```
+poetry run poe
+```
 ## Running Tests
 
 The [pytest](https://docs.pytest.org/) tests can be run using the following command
@@ -141,3 +126,26 @@ The following instructions are for maintainers
 1. Enter the new version number as the tag and release title and give a brief description
 1. Click "Publish release"
 1. A GitHub Actions release hook will run the automated checks and tests, publish the package to PyPI and publish the documentation to the GitHub Pages site
+
+
+## Mcrosoft Contributor License Agreement
+
+This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit <https://cla.opensource.microsoft.com>.
+
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
+
+## Code of Conduct
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com>) with any additional questions or comments.
+
+## Submitting an Issue
+
+Please [search for your issue](https://github.com/microsoft/sammo/issues?q=is%3Aissue) before submitting a new one.
+
+If nothing relevant shows up, please do [open a new issue](https://github.com/microsoft/sammo/issues/new) and provide as much detail as you can (ie: OS, python version, data formats, etc). Outputs of commands, error logs, source code snippets, etc are welcomed and will help to trace down the issue. Questions are also welcomed as they provide an opportunity for us to improve the documentation.
