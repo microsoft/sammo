@@ -42,10 +42,9 @@ class PersistentDict(MutableMapping, JSONConvertible):
 
     :param filename:
       path for the stored data. Loads the dictionary from the given file, or creates a new one if it doesn't exist.
-    :param project_keys: function to project before looking them up. Useful to ignore irrelevant parts of a key.
     """
 
-    def __init__(self, filename: os.PathLike | str, project_keys: Callable = None):
+    def __init__(self, filename: os.PathLike | str):
         self._filename = Path(filename)
         if self._filename.exists():
             self._dict = self._load()
@@ -55,9 +54,6 @@ class PersistentDict(MutableMapping, JSONConvertible):
         self._fp = None
         self._lock = threading.Lock()
         self._os_lock = filelock.FileLock(self._filename.with_suffix(".lock"), timeout=1)
-        self._virtual_key_to_raw = dict()
-        self._raw_key_to_virtual = project_keys
-        self._init_virtual_keys()
 
     def _load(self):
         timer = CodeTimer()
@@ -77,14 +73,6 @@ class PersistentDict(MutableMapping, JSONConvertible):
                 logger.warning(f"Failed to load line {line}")
         logger.info(f"Loaded {len(keys)} entries from {self._filename} in {timer.interval:.2f} s")
         return dict(zip(keys, vals))
-
-    def _init_virtual_keys(self):
-        if self._raw_key_to_virtual is not None:
-            self._virtual_key_to_raw = {
-                serialize_json(self._raw_key_to_virtual(orjson.loads(k))): k for k in self._dict.keys()
-            }
-            if len(self._virtual_key_to_raw) != len(self._dict):
-                warnings.warn("Virtual keys are not unique after projection.")
 
     def _append_to_file(self, key, value):
         if self._fp is None:
@@ -145,17 +133,11 @@ class PersistentDict(MutableMapping, JSONConvertible):
         self._dict = state
 
     def _find(self, key):
-        if self._raw_key_to_virtual is not None:
-            return self._virtual_key_to_raw.get(serialize_json(self._raw_key_to_virtual(key)), None)
-        else:
-            return serialize_json(key)
+        return serialize_json(key)
 
     def __setitem__(self, key, value):
         bkey = serialize_json(key)
         with self._lock:
-            if self._raw_key_to_virtual is not None:
-                vkey = serialize_json(self._raw_key_to_virtual(key))
-                self._virtual_key_to_raw[vkey] = bkey
             with self._os_lock:
                 self._append_to_file(bkey, value)
             self._dict[bkey] = value
@@ -187,16 +169,12 @@ class InMemoryDict(PersistentDict):
     """
     Implements a dictionary that lives only in memory. Entries are not persisted to disk unless `persist` is called.
 
-    :param project_keys: function to project keys before looking them up. Useful to ignore irrelevant parts of a key.
     """
 
-    def __init__(self, project_keys: Callable = None):
+    def __init__(self):
         self._dict = dict()
         self._lock = threading.Lock()
         self._os_lock = ExitStack()
-        self._virtual_key_to_raw = dict()
-        self._raw_key_to_virtual = project_keys
-        self._init_virtual_keys()
 
     def _append_to_file(self, key, value):
         pass
@@ -223,6 +201,8 @@ class SqlLiteDict(PersistentDict):
     """
 
     def __init__(self, directory: os.PathLike | str | None = None):
+        if directory and Path(directory).exists() and not Path(directory).is_dir():
+            raise ValueError(f"{directory} is not a directory.")
         self._filename = directory
         self._dict = diskcache.Cache(directory, eviction_policy="none")
 

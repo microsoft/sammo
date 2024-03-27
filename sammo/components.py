@@ -54,6 +54,7 @@ class GenerateText(ScalarComponent):
         seed=0,
         randomness: float = 0,
         max_tokens=None,
+        json_mode: bool = False,
         on_error: Literal["raise", "empty_result"] = "empty_result",
     ):
         super().__init__(child, name)
@@ -66,6 +67,7 @@ class GenerateText(ScalarComponent):
         self._seed = seed
         self._max_tokens = max_tokens
         self._on_error = on_error
+        self._json_mode = json_mode
         self.dependencies = [self._child, self._history] if self._history else [self._child]
 
         if seed > 0 and randomness == 0:
@@ -92,6 +94,7 @@ class GenerateText(ScalarComponent):
                 randomness=self._randomness,
                 seed=self._seed,
                 max_tokens=self._max_tokens,
+                json_mode=self._json_mode,
             )
             return result.with_parent(y)
         except Exception as e:

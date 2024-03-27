@@ -106,7 +106,25 @@ async def test_cache(basic):
 
 @pytest.mark.asyncio
 async def test_generate_embedding(basic_embedding):
-    runner = OpenAIEmbedding(model_id="text-embedding-ada-002", api_config={"api_key": "test"}, cache=None)
+    runner = OpenAIEmbedding(model_id="some_id", api_config={"api_key": "test"}, cache=None)
     runner._get_session = basic_embedding
-    result = await runner.generate_embedding("text")
+    result = await runner.generate_embedding(["text", "text2"])
+    assert result.value == [[0.1, 0.2], [0.3, 0.4]]
+
+
+@pytest.mark.asyncio
+async def test_cached_embeddings(basic_embedding):
+    cache = InMemoryDict()
+    cache[("some_id", "text2")] = [0.3, 0.4]
+    runner = OpenAIEmbedding(model_id="some_id", api_config={"api_key": "test"}, cache=cache)
+    runner._get_session = basic_embedding
+    result = await runner.generate_embedding(["text", "text2"])
+    assert len(basic_embedding.mock_calls[2].kwargs["json"]["input"]) == 1
+    assert result.value == [[0.1, 0.2], [0.3, 0.4]]
+    print(cache._dict)
+
+    # test that backend will not be called again if cached
+    result = await runner.generate_embedding(["text", "text2"])
+    assert basic_embedding.call_count == 1
+
     assert result.value == [[0.1, 0.2], [0.3, 0.4]]

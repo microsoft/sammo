@@ -20,7 +20,7 @@ from beartype.typing import Literal
 
 from sammo import PROMPT_LOGGER_NAME
 from sammo.base import LLMResult, Costs, Runner
-from sammo.store import PersistentDict
+from sammo.store import PersistentDict, SqlLiteDict
 from sammo.throttler import AtMost, Throttler
 from sammo.utils import serialize_json
 
@@ -29,8 +29,10 @@ prompt_logger = logging.getLogger(PROMPT_LOGGER_NAME)
 
 
 class RetriableError(Exception):
-    """Base class for retriable errors which should be raised by subclasses."""
+    pass
 
+
+class NonRetriableError(Exception):
     pass
 
 
@@ -65,11 +67,12 @@ class BaseRunner(Runner):
     """
 
     RETRY_ERRORS = ()
+    DEFAULT_CACHE = PersistentDict
 
     def __init__(
         self,
         model_id: str,
-        api_config: dict | pathlib.Path,
+        api_config: dict | str | pathlib.Path,
         cache: None | MutableMapping | str | os.PathLike = None,
         equivalence_class: str | Literal["major", "exact"] = "major",
         rate_limit: AtMost | list[AtMost] | Throttler | int = 2,
@@ -84,6 +87,9 @@ class BaseRunner(Runner):
 
         if isinstance(api_config, dict):
             self._api_config = dict(api_config)
+        elif isinstance(api_config, str):
+            with open(api_config) as api_config_file:
+                self._api_config = json.load(api_config_file)
         elif isinstance(api_config, pathlib.Path):
             with api_config.open() as api_config_file:
                 self._api_config = json.load(api_config_file)
@@ -106,7 +112,7 @@ class BaseRunner(Runner):
             self._equivalence_class = equivalence_class
 
         if isinstance(cache, str) or isinstance(cache, os.PathLike):
-            self._cache = PersistentDict(cache)
+            self._cache = self.DEFAULT_CACHE(cache)
         else:
             self._cache = cache
         self._retry_on = RetriableError if retry else tuple()
@@ -192,9 +198,7 @@ class BaseRunner(Runner):
     @asynccontextmanager
     async def _get_session(self):
         async with aiohttp.ClientSession(
-            json_serialize=lambda x: orjson.dumps(x).decode(),
-            timeout=aiohttp.ClientTimeout(None, None, None),
-            raise_for_status=True,
+            json_serialize=lambda x: orjson.dumps(x).decode(), timeout=aiohttp.ClientTimeout(None, None, None)
         ) as session:
             yield session
 
@@ -220,18 +224,18 @@ class OpenAIBaseRunner(BaseRunner):
 
     async def _call_backend(self, request: dict) -> dict:
         async with self._get_session() as session:
-            try:
-                async with session.post(
-                    self._rest_url(),
-                    json=request | {"model": self._model_id},
-                    headers=self._get_headers(),
-                ) as response:
-                    return await response.json()
-            except aiohttp.ClientResponseError as e:
-                if e.status in [429, 500, 503]:
-                    raise RetriableError(f"Server error: {e.status} {e.message}") from e
+            async with session.post(
+                self._rest_url(),
+                json=request | {"model": self._model_id},
+                headers=self._get_headers(),
+            ) as response:
+                text = await response.json()
+                if response.status in [429, 500, 503]:
+                    raise RetriableError(f"Server error: {response.status} {text}")
+                elif response.status == 200:
+                    return text
                 else:
-                    raise e
+                    raise NonRetriableError(f"Server error: {response.status} {text}")
 
     def _get_headers(self):
         return {"Authorization": f"Bearer {self._api_config['api_key']}"}
@@ -250,6 +254,7 @@ class OpenAIChat(OpenAIBaseRunner):
         priority: int = 0,
         system_prompt: str | None = None,
         history: list[dict] | None = None,
+        json_mode: bool = False,
     ) -> LLMResult:
         """Calls the chat endpoint of the OAI model.
 
@@ -278,12 +283,15 @@ class OpenAIChat(OpenAIBaseRunner):
         messages += [{"role": "user", "content": revised_prompt}]
 
         request = dict(messages=messages, max_tokens=self._max_context_window or max_tokens, temperature=randomness)
+        if json_mode:
+            request["response_format"] = {"type": "json_object"}
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
 
         return await self._execute_request(request, fingerprint, priority)
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
-        prompt_logger.debug(f"\n\n\nAPI call:\n->\n\n{json_data['choices'][0]['message']['content']}")
+        request_text = request["messages"][-1]["content"]
+        prompt_logger.debug(f"\n\n\nAPI call:\n{request_text}\n->\n\n{json_data['choices'][0]['message']['content']}")
         return LLMResult(
             json_data["choices"][0]["message"]["content"],
             history=request["messages"] + [json_data["choices"][0]["message"]],
@@ -377,13 +385,38 @@ class OpenAIVisionChat(OpenAIChat):
 
 class OpenAIEmbedding(OpenAIChat):
     SUFFIX = "/embeddings"
+    INPUT_FIELD = "input"
+    DEFAULT_CACHE = SqlLiteDict
+
+    def _post_init(self):
+        super()._post_init()
+        self._embeddings_cache = self._cache
+        self._cache = None
 
     async def generate_embedding(self, text: str | list[str], priority: int = 0) -> LLMResult:
         if isinstance(text, list) and len(text) > 2048:
             raise ValueError("Batch size must be below 2048.")
-        fingerprint = serialize_json({"embedding_model_id": self._equivalence_class, "input": text})
-        request = dict(input=text)
-        return await self._execute_request(request, fingerprint, priority)
+        elif not isinstance(text, list):
+            text = [text]
+
+        # Look up the cache for the embeddings
+        embeddings = [None] * len(text)
+        missing = list()
+        for i, t in enumerate(text):
+            if self._embeddings_cache is not None and (self._equivalence_class, t) in self._embeddings_cache:
+                embeddings[i] = self._embeddings_cache[(self._equivalence_class, t)]
+            else:
+                missing.append(i)
+        if missing:
+            fingerprint = serialize_json({"embedding_model_id": self._equivalence_class, self.INPUT_FIELD: text})
+            missing_embeddings = await self._execute_request(
+                {self.INPUT_FIELD: [text[i] for i in missing]}, fingerprint, priority
+            )
+            for i, emb in zip(missing, missing_embeddings.value):
+                embeddings[i] = emb
+                if self._embeddings_cache is not None:
+                    self._embeddings_cache[(self._equivalence_class, text[i])] = emb
+        return LLMResult(embeddings, costs=Costs())
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes):
         return LLMResult([x["embedding"] for x in json_data["data"]], costs=self._extract_costs(json_data))
@@ -403,15 +436,12 @@ class AzureEmbedding(AzureMixIn, OpenAIEmbedding):
 
 class DeepInfraEmbedding(BaseRunner):
     BASE_URL = r"https://api.deepinfra.com/v1/inference/"
+    INPUT_FIELD = "inputs"
+    DEFAULT_CACHE = SqlLiteDict
 
-    async def generate_embedding(self, text: str | list[str], priority: int = 0) -> LLMResult:
-        if isinstance(text, list) and len(text) > 2048:
-            raise ValueError("Batch size must be below 2048.")
-        elif not isinstance(text, list):
-            text = [text]
-        fingerprint = serialize_json({"embedding_model_id": self._equivalence_class, "inputs": text})
-        request = dict(inputs=text)
-        return await self._execute_request(request, fingerprint, priority)
+    def _post_init(self):
+        self._embeddings_cache = self._cache
+        self._cache = None
 
     def _rest_url(self):
         return f"{self.BASE_URL}{self._model_id}"

@@ -27,28 +27,6 @@ def test_read(data, expected):
 @pytest.mark.parametrize(
     "data",
     [
-        [({"id": 1, "irrelevant": "12"}, "Hello")],
-        [({"id": 1, "irrelevant": "12"}, "Hello"), ({"id": 2, "irrelevant": "12"}, "Hello")],
-    ],
-)
-def test_remapping(data):
-    with patch("sammo.store.filelock.FileLock"):
-        with patch("builtins.open", lambda x, y: BytesIO()) as mock_file:
-            store = PersistentDict("test_file.data", project_keys=lambda x: x.get("id"))
-            for k, v in data:
-                store[k] = v
-                assert k in store
-                k_prime = k.copy()
-                k_prime["irrelevant"] = 23
-                assert k_prime in store
-                assert store[k_prime] == "Hello"
-                store[k_prime] = "World"
-                assert store[k] == "World"
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
         [("test", "Hello")],
         [("test", "Hello"), ("int", 3)],
     ],

@@ -172,15 +172,12 @@ class EmbeddingFewshotExamples(FewshotExamples):
         n_examples: int | None = None,
         name: str | None = None,
         aggregate: Literal["roundrobin", "max"] = "roundrobin",
-        cache: MutableMapping | None = None,
         filter_exact_matches: bool = True,
         budget: Literal["absolute", "relative"] = "absolute",
     ):
         super().__init__(data, n_examples, name)
         self._embedder = embedder
-        self._fingerprint = hashlib.md5(pg.to_json_str(embedder).encode("utf-8")).hexdigest()
         self._aggregate = aggregate
-        self._index = cache or dict()
         self._data = data
         rendered = self._render(data)
         self._filter_exact = filter_exact_matches
@@ -194,21 +191,7 @@ class EmbeddingFewshotExamples(FewshotExamples):
         return [str(x) for x in data]
 
     async def _embed(self, rendered: list[str]) -> np.ndarray:
-        missing = [x for x in rendered if (self._fingerprint, x) not in self._index]
-        if missing:
-            if len(missing) > self.MAX_BATCH_SIZE:
-                embeddings = list()
-                pbar = CompactProgressBars().get("embedding minibatches", math.ceil(len(missing) / self.MAX_BATCH_SIZE))
-
-                for i in range(0, len(missing), self.MAX_BATCH_SIZE):
-                    embeddings += (await self._embedder.generate_embedding(missing[i : i + self.MAX_BATCH_SIZE])).value
-                    pbar.update()
-            else:
-                embeddings = (await self._embedder.generate_embedding(missing)).value
-
-            for key, value in zip(missing, embeddings):
-                self._index[(self._fingerprint, key)] = value
-        return np.asarray([self._index[(self._fingerprint, key)] for key in rendered])
+        return np.asarray((await self._embedder.generate_embedding(rendered)).value)
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
         input_rendered = self._render(context["data"]["inputs"])
