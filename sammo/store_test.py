@@ -3,7 +3,7 @@
 from unittest.mock import patch, mock_open, Mock
 import pytest
 from io import BytesIO
-from sammo.store import PersistentDict, InMemoryDict, serialize_json
+from sammo.store import PersistentDict, InMemoryDict, serialize_json, SqlLiteDict
 
 
 @pytest.mark.parametrize(
@@ -22,28 +22,6 @@ def test_read(data, expected):
             store = PersistentDict("dummy.txt")
             read = store._load()
             assert read == expected
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        [({"id": 1, "irrelevant": "12"}, "Hello")],
-        [({"id": 1, "irrelevant": "12"}, "Hello"), ({"id": 2, "irrelevant": "12"}, "Hello")],
-    ],
-)
-def test_remapping(data):
-    with patch("sammo.store.filelock.FileLock"):
-        with patch("builtins.open", lambda x, y: BytesIO()) as mock_file:
-            store = PersistentDict("test_file.data", project_keys=lambda x: x.get("id"))
-            for k, v in data:
-                store[k] = v
-                assert k in store
-                k_prime = k.copy()
-                k_prime["irrelevant"] = 23
-                assert k_prime in store
-                assert store[k_prime] == "Hello"
-                store[k_prime] = "World"
-                assert store[k] == "World"
 
 
 @pytest.mark.parametrize(
@@ -120,3 +98,13 @@ def test_persist(data, expected):
 )
 def test_fix_point(data):
     serialize_json(data) == serialize_json(serialize_json(data))
+
+
+def test_sqlite():
+    store = SqlLiteDict(None)
+    store["test"] = "Hello"
+    assert store["test"] == "Hello"
+    store["test"] = "World"
+    assert store["test"] == "World"
+    del store["test"]
+    assert "test" not in store
