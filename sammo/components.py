@@ -1,12 +1,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from __future__ import annotations
 import asyncio
+import quattro
 import logging
 import math
 import warnings
 
 import beartype
 from beartype.typing import Callable, Literal
+from beartype.typing import Union as TUnion
 from frozendict import frozendict
 
 import sammo.utils as utils
@@ -49,8 +52,8 @@ class GenerateText(ScalarComponent):
         self,
         child: ScalarComponent,
         name=None,
-        system_prompt: str | None = None,
-        history: ScalarComponent | None = None,
+        system_prompt: TUnion[str, None] = None,
+        history: TUnion[ScalarComponent, None] = None,
         seed=0,
         randomness: float = 0,
         max_tokens=None,
@@ -162,7 +165,7 @@ class ForEach(ListComponent):
         if not isinstance(collection, list):
             collection = [collection]
 
-        async with asyncio.TaskGroup() as tg:
+        async with quattro.TaskGroup() as tg:
             for x in collection:
                 tasks.append(
                     tg.create_task(
@@ -235,10 +238,10 @@ class Output(Component):
     def run(
         self,
         runner: Runner,
-        data: DataTable | list | None = None,
-        progress_callback: Callable | bool = True,
+        data: TUnion[DataTable, list, None] = None,
+        progress_callback: TUnion[Callable, bool] = True,
         priority: int = 0,
-        on_error: Literal["raise", "empty_result", "backoff"] | None = None,
+        on_error: TUnion[Literal["raise", "empty_result", "backoff"], None] = None,
     ) -> DataTable:
         """Synchronous version of `arun`."""
         return utils.sync(self.arun(runner, data, progress_callback, priority, on_error))
@@ -254,10 +257,10 @@ class Output(Component):
     async def arun(
         self,
         runner: Runner,
-        data: DataTable | list | None = None,
-        progress_callback: Callable | bool = True,
+        data: TUnion[DataTable, list, None] = None,
+        progress_callback: TUnion[Callable, bool] = True,
         priority: int = 0,
-        on_error: Literal["raise", "empty_result", "backoff"] | None = None,
+        on_error: TUnion[Literal["raise", "empty_result", "backoff"], None] = None,
     ):
         """
         Run the component asynchronously and return a DataTable with the results.

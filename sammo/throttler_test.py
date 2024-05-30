@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import asyncio
+import quattro
 import threading
 import time
 
@@ -32,7 +33,7 @@ async def simple_job(job_id, throttler, fail=False, delay=0):
 async def test_basic_call_limit(n_jobs, completion_time):
     throttler = Throttler([AtMost(10, "calls", 0.1)])
 
-    async with asyncio.TaskGroup() as g:
+    async with quattro.TaskGroup() as g:
         jobs = [g.create_task(simple_job(i, throttler)) for i in range(n_jobs)]
     jobs = [j.result() for j in jobs]
     durations = [j["duration"] for j in jobs]
@@ -46,7 +47,7 @@ async def test_basic_call_limit(n_jobs, completion_time):
 async def test_basic_running_limit(n_jobs, completion_time, job_duration=0.05):
     throttler = Throttler([AtMost(10, "running")], sleep_interval=0.001)
 
-    async with asyncio.TaskGroup() as g:
+    async with quattro.TaskGroup() as g:
         jobs = [g.create_task(simple_job(i, throttler, delay=job_duration)) for i in range(n_jobs)]
     jobs = [j.result() for j in jobs]
 
@@ -61,7 +62,7 @@ async def test_basic_running_limit(n_jobs, completion_time, job_duration=0.05):
 async def test_basic_failed_limit(jobs_with_flags, completion_time):
     throttler = Throttler([AtMost(1, "failed", 0.1)], rejection_window=-1, sleep_interval=0.001)
 
-    async with asyncio.TaskGroup() as g:
+    async with quattro.TaskGroup() as g:
         jobs = [g.create_task(simple_job(i, throttler, fail=j)) for i, j in enumerate(jobs_with_flags)]
     jobs = [j.result() for j in jobs]
 
@@ -79,7 +80,7 @@ async def test_basic_failed_limit(jobs_with_flags, completion_time):
 async def test_basic_rejected_limit(jobs_with_flags, completion_time):
     throttler = Throttler([AtMost(1, "rejected", 0.1, 0.1)], rejection_window=1, sleep_interval=0.001)
 
-    async with asyncio.TaskGroup() as g:
+    async with quattro.TaskGroup() as g:
         jobs = [g.create_task(simple_job(i, throttler, fail=j)) for i, j in enumerate(jobs_with_flags)]
     jobs = [j.result() for j in jobs]
     durations = [j["duration"] for j in jobs]

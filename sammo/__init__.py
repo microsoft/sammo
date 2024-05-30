@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 import logging
 import beartype
+from beartype.typing import Union
 import sammo.utils as utils
 from pathlib import Path
 
@@ -10,9 +11,9 @@ PROMPT_LOGGER_NAME = "prompt_logger"
 
 @beartype.beartype
 def setup_logger(
-    default_level: int | str = "DEBUG",
+    default_level: Union[int, str] = "DEBUG",
     log_prompts_to_file: bool = False,
-    prompt_level: int | str = "DEBUG",
+    prompt_level: Union[int, str] = "DEBUG",
     prompt_logfile_name: str = None,
 ) -> logging.Logger:
     if log_prompts_to_file:

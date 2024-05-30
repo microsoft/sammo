@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from asyncio import TaskGroup
+from quattro import TaskGroup
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest

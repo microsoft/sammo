@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from __future__ import annotations
 import abc
 import base64
 import re
 import warnings
 from abc import abstractmethod
 import asyncio
+import async_timeout
 from collections.abc import MutableMapping
 import json
 import logging
@@ -16,7 +18,7 @@ from contextlib import asynccontextmanager
 import aiohttp
 import orjson
 from beartype import beartype
-from beartype.typing import Literal
+from beartype.typing import Literal, Union
 
 from sammo import PROMPT_LOGGER_NAME
 from sammo.base import LLMResult, Costs, Runner
@@ -48,7 +50,6 @@ class MockedRunner:
         return LLMResult(self.return_value)
 
 
-@beartype
 class BaseRunner(Runner):
     """Base class for OpenAI API runners.
 
@@ -73,13 +74,13 @@ class BaseRunner(Runner):
         self,
         model_id: str,
         api_config: dict | str | pathlib.Path,
-        cache: None | MutableMapping | str | os.PathLike = None,
-        equivalence_class: str | Literal["major", "exact"] = "major",
-        rate_limit: AtMost | list[AtMost] | Throttler | int = 2,
+        cache: Union[None, MutableMapping, str, os.PathLike] = None,
+        equivalence_class: Union[str, Literal["major", "exact"]] = "major",
+        rate_limit: Union[AtMost, list[AtMost], Throttler, int] = 2,
         max_retries: int = 50,
-        max_context_window: int | None = None,
+        max_context_window: Union[int, None] = None,
         retry: bool = True,
-        timeout: float | int = 60,
+        timeout: Union[float, int] = 60,
         max_timeout_retries: int = 1,
         use_cached_timeouts: bool = True,
     ):
@@ -150,7 +151,7 @@ class BaseRunner(Runner):
 
                 try:
                     job_handle = await self._throttler.wait_in_line(priority)
-                    async with asyncio.timeout(self._timeout):
+                    async with async_timeout.timeout(self._timeout):
                         json = await self._call_backend(request)
                     response_obj = self._llm_result(request, json, fingerprint)
                     response_obj.retries = cur_try

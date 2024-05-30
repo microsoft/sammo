@@ -4,12 +4,13 @@
 DataTables are the primary data structure used in SAMMO.
 They are essentially a wrapper around a list of inputs and outputs (labels), with some additional functionality.
 """
+from __future__ import annotations
 import copy
 import hashlib
 import math
 
 from beartype import beartype
-from beartype.typing import Callable, Iterator, Self
+from beartype.typing import Callable, Iterator, Union
 import more_itertools
 import orjson
 import pyglove as pg
@@ -36,8 +37,8 @@ class DataTable(pg.JSONConvertible):
     def __init__(
         self,
         inputs: list,
-        outputs: list | None = None,
-        constants: dict | None = None,
+        outputs: Union[list, None] = None,
+        constants: Union[dict, None] = None,
         seed=42,
     ):
         inputs = DataTable._ensure_list(inputs)
@@ -73,7 +74,7 @@ class DataTable(pg.JSONConvertible):
         return self._outputs
 
     @property
-    def constants(self) -> dict | None:
+    def constants(self) -> Union[dict, None]:
         """Access constants."""
         return self._data["constants"]
 
@@ -101,9 +102,9 @@ class DataTable(pg.JSONConvertible):
     def from_pandas(
         cls,
         df: "pandas.DataFrame",
-        output_fields: list[str] | str = "output",
-        input_fields: list[str] | str | None = None,
-        constants: dict | None = None,
+        output_fields: Union[list[str], str] = "output",
+        input_fields: Union[list[str], str, None] = None,
+        constants: Union[dict, None] = None,
         seed=42,
     ):
         """Create a DataTable from a pandas DataFrame.
@@ -130,8 +131,8 @@ class DataTable(pg.JSONConvertible):
     def from_records(
         cls,
         records: list[dict],
-        output_fields: list[str] | str = "output",
-        input_fields: list[str] | str | None = None,
+        output_fields: Union[list[str], str] = "output",
+        input_fields: Union[list[str], str, None] = None,
         **kwargs,
     ):
         if len(records) == 0:
@@ -195,7 +196,7 @@ class DataTable(pg.JSONConvertible):
             table = "<empty DataTable>"
         return f"{table}\nConstants: {DataTable._truncate(self.constants, max_col_width)}"
 
-    def _to_explicit_idx(self, key: int | slice | list[int]):
+    def _to_explicit_idx(self, key: Union[int, slice, list[int]]):
         if isinstance(key, int):
             return [key]
         elif isinstance(key, slice):
@@ -208,7 +209,7 @@ class DataTable(pg.JSONConvertible):
         new_outputs = [self._data["outputs"][i] for i in idx]
         return DataTable(new_inputs, new_outputs, self.constants, self._seed)
 
-    def sample(self, k: int, seed: int | None = None) -> Self:
+    def sample(self, k: int, seed: Union[int, None] = None):
         """Sample rows without replacement.
 
         :param k: Number of rows to sample.
@@ -224,7 +225,7 @@ class DataTable(pg.JSONConvertible):
 
         return self[selected_idx]
 
-    def shuffle(self, seed: int | None = None) -> Self:
+    def shuffle(self, seed: Union[int, None] = None):
         """Shuffle rows.
 
         :param seed: Random seed. If not provided, instance seed is used.
@@ -242,7 +243,7 @@ class DataTable(pg.JSONConvertible):
         splits = [slice(sum(sizes[:i]), sum(sizes[: i + 1])) for i in range(len(sizes))]
         return tuple(sampled[split] for split in splits)
 
-    def copy(self) -> Self:
+    def copy(self):
         return copy.deepcopy(self)
 
     def get_minibatch_iterator(self, minibatch_size):

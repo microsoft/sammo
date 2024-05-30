@@ -6,6 +6,8 @@ can be used to limit the number of concurrent jobs, the number of jobs per time 
 time period, or the number of failed jobs per time period. The context manager will block until there is capacity
 to run the job. The jobs are run in order of priority, breaking ties with creation time.
 """
+
+from __future__ import annotations
 import asyncio
 import bisect
 from collections import deque
@@ -16,7 +18,8 @@ import threading
 import time
 
 from beartype import beartype
-from beartype.typing import Literal
+from beartype.typing import Literal, Union
+
 
 __all__ = ["Throttler", "AtMost"]
 
@@ -68,10 +71,10 @@ class Job:
 class AtMost:
     """Class for defining a throttling limit."""
 
-    value: float | int
+    value: Union[float, int]
     type: Literal["calls", "running", "failed", "rejected"]
-    period: float | int = 1
-    pause_for: float | int = 0
+    period: Union[float, int] = 1
+    pause_for: Union[float, int] = 0
 
 
 @beartype
@@ -93,7 +96,7 @@ class Throttler:
         sleep_interval: float = 0.01,
         impute_pending_costs: bool = True,
         n_cost_samples: int = 10,
-        rejection_window: int | float = 0.5,
+        rejection_window: Union[int, float] = 0.5,
     ):
         self._limits = limits
         self._max_history_window = max([x.period for x in limits] + [60])
@@ -133,7 +136,7 @@ class Throttler:
         """A more precise sleep function on Windows"""
         await asyncio.get_running_loop().run_in_executor(None, time.sleep, delay)
 
-    def update_job_stats(self, job: Job, cost: float | int = 0, failed: bool = False) -> None:
+    def update_job_stats(self, job: Job, cost: Union[float, int], failed: bool = False) -> None:
         """Update the stats for a job. Needs to be called when a job is finished.
 
         :param job: Job instance to update.
