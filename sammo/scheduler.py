@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 import asyncio
+import quattro
 import collections
 import json
 import pathlib
@@ -136,7 +137,7 @@ class Scheduler:
         await self.finalized_tasks_queue.put(node)
 
     async def arun(self):
-        async with asyncio.TaskGroup() as tg:
+        async with quattro.TaskGroup() as tg:
             while self.tasks.is_active():
                 for compute_node in self.tasks.get_ready():
                     if compute_node.job.NEEDS_SCHEDULING:

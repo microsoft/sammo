@@ -5,6 +5,7 @@ DataFormatters are components that take a DataTable or dict and format it into a
 get_extractor method that can be used to parse the LLM responses in this format.
 
 """
+from __future__ import annotations
 import collections
 import json
 

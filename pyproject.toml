@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.1.6"
+version = "0.1.7"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -12,7 +12,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11,<3.12"
+python = "^3.9,<3.12"
 beartype = "^0.15"
 benepar = {version = "^0.2", optional = true}
 filelock = "^3.12"
@@ -30,6 +30,8 @@ xmltodict = "^0.13"
 PyYAML = "^6.0"
 aiohttp = "^3.6"
 diskcache = "^5.2"
+quattro = "^24"
+async-timeout = "^4.0.3"
 
 [tool.poetry.extras]
 parser = ["benepar"]

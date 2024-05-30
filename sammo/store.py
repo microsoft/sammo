@@ -4,6 +4,7 @@
 arbitrary JSON-serializable objects that get rendered to byte strings for indexing.
 Mainly used to cache LLM API calls, but can be used for other purposes as well.
 """
+from __future__ import annotations
 from collections.abc import MutableMapping
 from contextlib import ExitStack
 from io import BytesIO
@@ -14,7 +15,7 @@ import warnings
 from pathlib import Path
 
 import diskcache
-from beartype.typing import Callable
+from beartype.typing import Callable, Union
 import filelock
 import orjson
 from pyglove import JSONConvertible
@@ -200,7 +201,7 @@ class SqlLiteDict(PersistentDict):
     :param directory: path for the stored data. If none, uses a temporary directory.
     """
 
-    def __init__(self, directory: os.PathLike | str | None = None):
+    def __init__(self, directory: Union[os.PathLike, str, None] = None):
         if directory and Path(directory).exists() and not Path(directory).is_dir():
             raise ValueError(f"{directory} is not a directory.")
         self._filename = directory

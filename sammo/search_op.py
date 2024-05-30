@@ -4,6 +4,7 @@
 This module contains a variety of search operators that can be used to define a discrete search space for `GridSearch`
 or define a set of initial candidates for other search algorithms.
 """
+from __future__ import annotations
 import pyglove as pg
 from sammo.base import Component
 from beartype.typing import Iterable, Any, Callable

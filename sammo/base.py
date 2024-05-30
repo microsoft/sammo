@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from __future__ import annotations
 import abc
 import copy
 import re
 
-from beartype.typing import Callable, Self
+from beartype.typing import Callable, Any
 from frozendict import frozendict
 import pyglove as pg
 import pybars
@@ -194,7 +195,7 @@ class CompiledQuery:
         self.child_selector = child_selector
 
     @classmethod
-    def from_path(cls, path_descriptor: str | dict | Self):
+    def from_path(cls, path_descriptor: str | dict | Any):
         if isinstance(path_descriptor, CompiledQuery):
             return path_descriptor
         elif isinstance(path_descriptor, str):
@@ -236,7 +237,7 @@ class Component:
 
     NEEDS_SCHEDULING = False
 
-    def __init__(self, child: Self | str, name: str | None = None):
+    def __init__(self, child: Any | str, name: str | None = None):
         if name is None:
             self._name = self.__class__.__name__
         else:

@@ -5,6 +5,7 @@ This module contains components that extract data from the output of other compo
 Common formats such as JSON, XML, or Markdown are supported and require no data format specification. If validation is
 required, it should happen downstream of the extraction step.
 """
+from __future__ import annotations
 import abc
 import ast
 import fractions

@@ -1,7 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from __future__ import annotations
 import abc
 import asyncio
+import quattro
 import collections
 import logging
 import random
@@ -838,7 +840,7 @@ class BagOfMutators(Mutator):
         else:
             selected_mutators = collections.Counter(selected_mutators)
             tasks = list()
-            async with asyncio.TaskGroup() as tg:
+            async with quattro.TaskGroup() as tg:
                 for i, (mut, n_mut) in enumerate(selected_mutators.items()):
                     mut.objective = self._objective
                     tasks.append(tg.create_task(mut.mutate(candidate, data, runner, n_mut, random_state + i)))

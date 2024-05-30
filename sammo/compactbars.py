@@ -4,6 +4,7 @@
 Provides a way of displaying multiple progress bars in a single line. Works in both interactive and non-interactive
 environments.
 """
+from __future__ import annotations
 import collections
 import datetime
 import io
@@ -12,6 +13,7 @@ import shutil
 import sys
 import time
 from beartype import beartype
+from beartype.typing import Union
 
 from sammo import utils
 
@@ -191,7 +193,7 @@ class CompactProgressBars:
     :param refresh_interval: The minimum time interval between display refreshes.
     """
 
-    def __init__(self, width: int | None = None, refresh_interval: float = 1 / 50):
+    def __init__(self, width: Union[int, None] = None, refresh_interval: float = 1 / 50):
         self._bars = collections.OrderedDict()
         self._printer = LinePrinter()
         self._last_update = 0
@@ -215,7 +217,12 @@ class CompactProgressBars:
         return False
 
     def get(
-        self, id: str, total: int | None = None, position: int | None = None, display_name: str | None = None, **kwargs
+        self,
+        id: str,
+        total: Union[int, None] = None,
+        position: Union[int, None] = None,
+        display_name: Union[str, None] = None,
+        **kwargs,
     ) -> SubProgressBar:
         """
         Gets existing or creates a new progress bar given an id.

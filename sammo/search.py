@@ -1,5 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+from __future__ import annotations
 import asyncio
 import collections
 import copy
@@ -8,6 +9,7 @@ import random
 from collections.abc import Callable
 import datetime
 from pathlib import Path
+import quattro
 
 from beartype import beartype
 from beartype.typing import Literal
@@ -179,7 +181,7 @@ class Optimizer:
         subtasks_cb = colbar.get("tasks", total=subtasks_total).update
 
         evaluation_tasks = list()
-        async with asyncio.TaskGroup() as g:
+        async with quattro.TaskGroup() as g:
             for i, candidate in enumerate(candidates):
                 task = g.create_task(candidate.arun(runner, dataset, subtasks_cb, i))
                 task.add_done_callback(update_when_done)
@@ -268,7 +270,7 @@ class BeamSearch(Optimizer):
             update_pbar = colbar.get("mutate", total=len(active_set), show_time=False, position=1).update
 
             candidates_for_mutation = self._pick_candidates_for_mutation(active_set, rng)
-            async with asyncio.TaskGroup() as g:
+            async with quattro.TaskGroup() as g:
                 for i, x in enumerate(candidates_for_mutation):
                     task = g.create_task(
                         self._mutator.mutate(
@@ -449,7 +451,7 @@ class EnumerativeSearch(Optimizer):
 
         running_tasks = list()
         total_minibatches = 0
-        async with asyncio.TaskGroup() as tg:
+        async with quattro.TaskGroup() as tg:
             for i, search_context in enumerate(
                 pg.iter(
                     traced_search_space,
