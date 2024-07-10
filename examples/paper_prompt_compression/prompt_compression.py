@@ -274,7 +274,9 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     baseline_model = EnumerativeSearch(runner, search_space, objective, max_candidates=1)
     d_train_pred = baseline_model.fit_transform(data["d_train"])
     dtest_baseline = baseline_model.transform(data["d_test"])
-    baseline_model.save(MAIN_FOLDER / "autobatch" / f"baseline" / f"{run_id}.batchsize={minibatch_size}.model.json")
+    baseline_model.save_json(
+        MAIN_FOLDER / "autobatch" / f"baseline" / f"{run_id}.batchsize={minibatch_size}.model.json"
+    )
 
     objective.callibrate(data["d_train"], d_train_pred)
     ops = {
@@ -400,7 +402,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
         dtest_pred = prompt_optimizer.transform(data["d_test"])
         print(f"Baseline (test):\n {objective(data['d_test'], dtest_baseline)}")
         print(f"{method} (test):\n {objective(data['d_test'], dtest_pred)}")
-    prompt_optimizer.save(MAIN_FOLDER / "autobatch" / method / f"{run_id}.model.json")
+    prompt_optimizer.save_json(MAIN_FOLDER / "autobatch" / method / f"{run_id}.model.json")
 
 
 def check_spacy():

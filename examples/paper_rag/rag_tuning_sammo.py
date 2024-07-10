@@ -165,14 +165,14 @@ def main(llm, task_id, uuid, confirmed):
     baseline_model = EnumerativeSearch(runner, search_space, accuracy, maximize=True, max_candidates=1)
     baseline_model.fit_transform(d_train)
     dtest_baseline = baseline_model.transform(d_test)
-    baseline_model.save(MAIN_FOLDER / "baseline" / f"{run_id}.model.json")
+    baseline_model.save_json(MAIN_FOLDER / "baseline" / f"{run_id}.model.json")
 
     # SAMMO
     sammo_model = EnumerativeSearch(runner, search_space, accuracy, maximize=True)
     sammo_model.fit(d_train)
     sammo_model.show_report()
     dtest_sammo = sammo_model.transform(d_test)
-    sammo_model.save(MAIN_FOLDER / "sammo" / f"{run_id}.model.json")
+    sammo_model.save_json(MAIN_FOLDER / "sammo" / f"{run_id}.model.json")
 
     print(f"Baseline (test):\n {accuracy(d_test, dtest_baseline)}")
     print(f"SAMMO (test):\n {accuracy(d_test, dtest_sammo)}")

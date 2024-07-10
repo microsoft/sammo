@@ -109,6 +109,13 @@ class Result:
             value_str = value_str[:100] + "..."
         return f"{self.__class__.__name__}(value={value_str}, parent={self.parent.__class__.__name__})"
 
+    @staticmethod
+    def get_value(result, as_list=False):
+        value = result.value if isinstance(result, Result) else result
+        if as_list:
+            return value if isinstance(value, list) else [value]
+        return value
+
 
 class NonEmptyResult(Result):
     pass

@@ -316,7 +316,7 @@ class Accessor:
         if isinstance(data, list):
             return [self._get_values(x) for x in data]
         elif isinstance(data, NonEmptyResult):
-            return data.value
+            return self._get_values(data.value)
         else:
             return data
 
@@ -327,7 +327,7 @@ class OutputAccessor(Accessor):
         while True:
             if isinstance(x, dict):
                 x = {k: v for k, v in x.items() if k not in ignore}
-                if flatten_1d_dicts and len(x) == 1:  # and not isinstance(list(x.values())[0], (int, float, str)):
+                if flatten_1d_dicts and len(x) == 1:
                     x = list(x.values())[0]
                 else:
                     return x

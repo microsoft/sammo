@@ -11,18 +11,14 @@ import json
 import requests
 import os
 
-API_CONFIG_FILE = pathlib.Path().cwd().parent / "config" / "personal.openai"
-API_CONFIG = ""
-if API_CONFIG_FILE.exists():
-    API_CONFIG = API_CONFIG_FILE
-if not API_CONFIG:
-    raise ValueError('Please set API_CONFIG to {"api_key": "YOUR_KEY"}')
+if not "OPENAI_API_KEY" in os.environ:
+    raise ValueError("Please set the environment variable 'OPENAI_API_KEY'.")
 
 _ = sammo.setup_logger("WARNING")  # we're only interested in warnings for now
 
 runner = OpenAIChat(
-    model_id="gpt-3.5-turbo-16k",
-    api_config=API_CONFIG,
+    model_id="gpt-3.5-turbo",
+    api_config={"api_key": os.environ["OPENAI_API_KEY"]},
     cache=os.getenv("CACHE_FILE", "cache.tsv"),
     timeout=30,
 )

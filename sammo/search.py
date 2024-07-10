@@ -17,6 +17,7 @@ from orjson import orjson
 import pyglove as pg
 from tabulate import tabulate
 
+import dill
 import sammo.base
 import sammo.runners
 from sammo.base import EvaluationScore
@@ -100,14 +101,24 @@ class Optimizer:
     def fit_costs(self):
         return self._state["fit_costs"]
 
-    def save(self, fname: str | Path | None = None, **extra_info):
+    def save(self, fname: str | Path):
+        fpath = Path(fname)
+        fpath.parent.mkdir(parents=True, exist_ok=True)
+        with open(fpath, "wb") as f:
+            dill.dump(self, f)
+
+    @staticmethod
+    def load(fname: str | Path):
+        fpath = Path(fname)
+        with open(fpath, "rb") as f:
+            return dill.load(f)
+
+    def save_json(self, fname: str | Path, **extra_info):
         def default(obj):
             if hasattr(obj, "to_json"):
                 return obj.to_json()
             raise TypeError
 
-        if fname is None:
-            fname = f"models/{self.__class__.__name__.lower()}_{datetime.date.today():%b_%d_%y}.json"
         fpath = Path(fname)
         fpath.parent.mkdir(parents=True, exist_ok=True)
 
@@ -255,7 +266,11 @@ class BeamSearch(Optimizer):
         depth_pbar = colbar.get("search depth", total=self._depth, show_rate=False)
 
         active_set = await self.evaluate(
-            [c.candidate for c in initial_candidates], self._runner, self._objective, dataset, colbar
+            [c.candidate for c in initial_candidates],
+            self._runner,
+            self._objective,
+            dataset,
+            colbar,
         )
         active_set = self.argsort(
             [{**x, "action": c.action, "prev_actions": [c.action]} for c, x in zip(initial_candidates, active_set)]
@@ -306,7 +321,11 @@ class BeamSearch(Optimizer):
                 [m.candidate for m in mutations], self._runner, self._objective, dataset, colbar
             )
             scored_mutations = [
-                {**m_scored, "prev_actions": [m.action] + m.parent["prev_actions"], "action": m.action}
+                {
+                    **m_scored,
+                    "prev_actions": [m.action] + m.parent["prev_actions"],
+                    "action": m.action,
+                }
                 for m, m_scored in zip(mutations, scored_mutations)
             ]
             self.log(d, scored_mutations)
@@ -346,7 +365,12 @@ class BeamSearch(Optimizer):
 
     def _show_extra_report(self):
         print("Action stats:")
-        print(tabulate([(k, dict(v)) for k, v in self._state["posteriors"].items()], headers=["action", "stats"]))
+        print(
+            tabulate(
+                [(k, dict(v)) for k, v in self._state["posteriors"].items()],
+                headers=["action", "stats"],
+            )
+        )
 
 
 @beartype
