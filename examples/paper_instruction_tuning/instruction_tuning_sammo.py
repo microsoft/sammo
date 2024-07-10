@@ -21,7 +21,7 @@ from sammo.data import DataTable
 from sammo.instructions import MetaPrompt, Paragraph, InputData
 from sammo.components import Output
 from sammo.dataformatters import PlainFormatter
-from sammo.search import EnumerativeSearch, BeamSearch
+from sammo.search import EnumerativeSearch, BeamSearch, Optimizer
 from sammo.store import PersistentDict
 
 import pathlib
@@ -170,7 +170,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     baseline_performance.fit_transform(data["d_train"])
     baseline_performance.transform(data["d_test"])
     baseline_performance.show_report()
-    baseline_performance.save(MAIN_FOLDER / "baseline" / f"{run_id}.model.json")
+    baseline_performance.save_json(MAIN_FOLDER / "baseline" / f"{run_id}.model.json")
 
     if method == "ape":
         prompt_optimizer = BeamSearch(
@@ -249,7 +249,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     if not debug:
         dtest_pred = prompt_optimizer.transform(data["d_test"])
         print(f"Test score: {accuracy(data['d_test'], dtest_pred)}")
-    prompt_optimizer.save(MAIN_FOLDER / method / f"{run_id}.model.json")
+    prompt_optimizer.save_json(MAIN_FOLDER / method / f"{run_id}.model.json")
 
 
 if __name__ == "__main__":
