@@ -9,62 +9,9 @@ import webbrowser
 from graphlib import TopologicalSorter
 import logging
 
-from sammo.utils import IFrameRenderer
+from sammo.utils import IFrameRenderer, GRAPH_TEMPLATE
 
 logger = logging.getLogger(__name__)
-TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<style>
-#cy {
-  height: 100%;
-  width: 100%;
-  position: absolute;
-  left: 0;
-  overflow: hidden;
-  top: 0;
-}
-</style>
-<meta charset=utf-8>
-<title>Callgraph</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-</head>
-<body>
-<div id="cy"></div>
-<script>
-var cy = cytoscape({
-  container: document.getElementById('cy'),
-
-  style: cytoscape.stylesheet()
-    .selector('node')
-      .style({
-        'content': 'data(id)'
-      })
-    .selector('edge')
-      .style({
-        'curve-style': 'bezier',
-        'target-arrow-shape': 'triangle',
-        'width': 1,
-        'line-color': 'black',
-        'target-arrow-color': 'black'
-      }),
-
-  elements: ELEMENTS,
-  wheelSensitivity: 0.3,
-  layout: {
-    name: 'breadthfirst',
-    directed: true
-  }
-});
-window.addEventListener('resize', function(event){
-	cy.resize();
-	cy.fit();
-});
-</script>
-</body>
-</html>
-"""
 
 
 class ComputeNode:
@@ -127,7 +74,7 @@ class Scheduler:
                 e2_id = node_ids[e2]
                 edges.append({"data": {"id": f"{e1_id}_{e2_id}", "source": e1_id, "target": e2_id}})
         elements = {"nodes": nodes, "edges": edges}
-        return TEMPLATE.replace("ELEMENTS", json.dumps(elements, ensure_ascii=False))
+        return GRAPH_TEMPLATE.replace("ELEMENTS", json.dumps(elements, ensure_ascii=False))
 
     def display(self):
         return IFrameRenderer(self._to_html())

@@ -39,15 +39,23 @@ class NonRetriableError(Exception):
 
 
 class MockedRunner:
-    def __init__(self, return_value=""):
-        self.return_value = return_value
+    def __init__(self, return_values=""):
+        self._ret_vals = return_values
+        self._n_calls = -1
+        self.prompt_log = list()
 
     @property
     def __class__(self) -> type:
         return Runner
 
     async def generate_text(self, prompt: str, *args, **kwargs):
-        return LLMResult(self.return_value)
+        self._n_calls += 1
+        self.prompt_log.append(prompt)
+        if isinstance(self._ret_vals, list):
+            ret_val = self._ret_vals[self._n_calls % len(self._ret_vals)]
+        else:
+            ret_val = self._ret_vals
+        return LLMResult(ret_val, costs=Costs(), request_text=prompt)
 
 
 class BaseRunner(Runner):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 import abc
 import copy
+import json
 import re
 
 from beartype.typing import Callable, Any
@@ -10,6 +11,7 @@ from frozendict import frozendict
 import pyglove as pg
 import pybars
 from tabulate import tabulate
+from sammo.utils import IFrameRenderer, GRAPH_TEMPLATE
 
 # monkey-patch pybars to disable HTML escaping
 pybars.Compiler._builder.add_escaped_expand = pybars.Compiler._builder.add_expand
@@ -65,7 +67,7 @@ class Result:
         return self.value
 
     @classmethod
-    def bfs(cls, start, match_condition: Callable):
+    def bfs(cls, start, match_condition: Callable | None = None):
         """Breadth-first search returning all nodes that match the given condition.
 
         Args:
@@ -74,7 +76,7 @@ class Result:
         matches = list()
         while queue:
             node = queue.pop(0)
-            if match_condition(node):
+            if match_condition is None or match_condition(node):
                 matches.append(node)
             if isinstance(node, Result):
                 queue.extend(node.parents)
@@ -115,6 +117,20 @@ class Result:
         if as_list:
             return value if isinstance(value, list) else [value]
         return value
+
+    def plot(self):
+        queue = [Result(None, parent=self)]
+        nodes = list()
+        edges = list()
+        while queue:
+            node = queue.pop(0)
+            nodes.append({"data": {"id": id(node), "label": node.__class__.__name__, "details": node.value}})
+            if isinstance(node, Result):
+                queue.extend(node.parents)
+                for parent in node.parents:
+                    edges.append({"data": {"target": id(node), "source": id(parent)}})
+        graph = json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False)
+        return IFrameRenderer(GRAPH_TEMPLATE.replace("ELEMENTS", graph))
 
 
 class NonEmptyResult(Result):
@@ -286,7 +302,10 @@ class Component:
         if compiled_query.child_selector is not None:
             for i in range(len(matches)):
                 path, val = matches[i]
-                matches[i] = (path + "." + compiled_query.child_selector, val.sym_get(compiled_query.child_selector))
+                matches[i] = (
+                    path + "." + compiled_query.child_selector,
+                    val.sym_get(compiled_query.child_selector),
+                )
 
         if not matches:
             return None
@@ -411,7 +430,7 @@ class Template(ScalarComponent):
         }
         dynamic_context = dict() if dynamic_context is None else dynamic_context
         result = self._fill(**data, **fill_values, **dynamic_context)
-        return TextResult(result)
+        return TextResult(result, parent=list(fill_values.values()) if fill_values else None)
 
     def _fill(self, **kwargs) -> str:
         kwargs = {k: self._unwrap_results(v) for k, v in kwargs.items()}

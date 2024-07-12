@@ -640,27 +640,6 @@ class Paraphrase(ShortenSegment):
         return [r.value for r in rewritten]
 
 
-class ParaphraseStatic(ShortenSegment):
-    def __init__(self, path_descriptor: str | dict, static_content: str):
-        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
-        self._static_content = static_content
-
-    async def _rewrite(self, runner, segment_content, n_mutations, random_state):
-        rewrites = [
-            GenerateText(
-                Template(
-                    "Paraphrase the text inside the tags. Do not output the tags. \n\n" "<TEXT>{{{content}}}</TEXT>",
-                    content=self._static_content,
-                ),
-                randomness=0.9,
-                seed=random_state + i,
-            )
-            for i in range(n_mutations)
-        ]
-        rewritten = (await Output(Union(*rewrites)).arun(runner)).outputs.raw_values[0]
-        return [r.value for r in rewritten]
-
-
 class RemoveStopWordsFromSegment(ShortenSegment):
     def __init__(self, path_descriptor: str | dict, choices: Any):
         self._path_descriptor = CompiledQuery.from_path(path_descriptor)

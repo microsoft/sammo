@@ -20,6 +20,93 @@ __all__ = [
     "serialize_json",
 ]
 
+GRAPH_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <style>
+  body,
+  html {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  .split {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .gutter {
+    background-color: #eee;
+    background-repeat: no-repeat;
+    background-position: 50%;
+  }
+
+  .gutter.gutter-horizontal {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+    cursor: col-resize;
+  }
+  </style>
+  <meta charset="utf-8" />
+  <title>Callgraph</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+</head>
+
+<body>
+  <div class="split">
+    <div id="info"></div>
+    <div id="graph"></div>
+  </div>
+  <script>
+  Split(['#info', '#graph'], {
+    sizes: [15, 85],
+    minSize: [100, 0],
+    onDragEnd: resizeCyto
+  });
+  var cy = cytoscape({
+    container: document.getElementById('graph'),
+    style: cytoscape.stylesheet().selector('node').style({
+      'content': 'data(label)'
+    }).selector('edge').style({
+      'curve-style': 'bezier',
+      'target-arrow-shape': 'triangle',
+      'width': 1,
+      'line-color': 'black',
+      'target-arrow-color': 'black'
+    }),
+    elements: ELEMENTS,
+    wheelSensitivity: 0.3,
+    layout: {
+      name: 'breadthfirst',
+      directed: true
+    }
+  });
+
+  function resizeCyto() {
+    cy.resize();
+    cy.fit();
+  }
+  window.addEventListener('resize', resizeCyto);
+  cy.on('tap', 'node', function(evt) {
+    var node = evt.target;
+    var details = node.data('details');
+    if (typeof(details) !== 'undefined') {
+      document.getElementById('info').innerHTML = `${details}`;
+    } else {
+      document.getElementById('info').innerHTML = "Node has no metadata.";
+    }
+  });
+  </script>
+</body>
+
+</html>
+"""
+
 
 class CodeTimer:
     """Time code with this context manager."""
