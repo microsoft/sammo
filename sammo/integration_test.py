@@ -1,9 +1,16 @@
+from io import BytesIO
+from unittest.mock import patch
+
+import dill
 import pytest
 
-from sammo.base import VerbatimText, Template
-from sammo.components import Output, Union, ForEach
+from sammo.base import VerbatimText, Template, EvaluationScore
+from sammo.components import Output, Union, ForEach, GenerateText
+from sammo.data import DataTable
 from sammo.extractors import ExtractRegex, LambdaExtractor, SplitLines, StripWhitespace
 from sammo.runners import MockedRunner
+from sammo.search import EnumerativeSearch
+from sammo.search_op import one_of
 
 
 def test_manual_loop():
@@ -40,3 +47,22 @@ def test_minibatching():
         minibatch_size=2,
     ).run(MockedRunner(), data, progress_callback=False)
     assert result.outputs.values == [str(d) for d in data]
+
+
+def test_search():
+    def prompt_space():
+        prompt = GenerateText(
+            Template(f"{{input}}"),
+            randomness=one_of([0.3, 0.7, 1.0], name="randomness"),
+        )
+        return Output(prompt)
+
+    def metric(y_true, y_pred):
+        return EvaluationScore(0)
+
+    train_data = DataTable([{"input": "1"}, {"input": "2"}])
+    runner = MockedRunner()
+    searcher = EnumerativeSearch(runner, prompt_space, metric)
+    searcher.fit_transform(train_data)
+    with patch("builtins.open", lambda x, y: BytesIO()) as mock_file:
+        searcher.save("file.pkl")

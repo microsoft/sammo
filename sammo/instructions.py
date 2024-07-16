@@ -1,17 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 from __future__ import annotations
-import hashlib
-import math
-
 import numpy as np
-from beartype.typing import Literal, MutableMapping
+from beartype.typing import Literal
 from frozendict import frozendict
-import pyglove as pg
-
-from sammo.compactbars import CompactProgressBars
 from sammo.utils import sync
-from sammo.base import Component, LLMResult, Runner, TextResult, ScalarComponent
+from sammo.base import Component, LLMResult, Runner, TextResult
 from sammo.components import GenerateText
 from sammo.data import DataTable
 from sammo.dataformatters import DataFormatter
@@ -26,23 +20,23 @@ class Renderer(Component):
             content = [Paragraph(c) if isinstance(content, str) else c for c in content]
         self.content = content
 
-    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> dict:
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Component:
         depth = dynamic_context.get("depth", -1)
         updated_context = frozendict({**dynamic_context, "depth": depth + 1})
-        children = self._unwrap_results(
-            [
-                await child(runner, context, updated_context) if isinstance(child, Component) else child
-                for child in self.content
-            ]
-        )
+        children_results = [
+            await child(runner, context, updated_context) if isinstance(child, Component) else child
+            for child in self.content
+        ]
+        children = self._unwrap_results(children_results)
 
         render_as = dynamic_context["render_as"]
         if render_as == "xml":
-            return TextResult(self.render_as_xml(children, depth=depth))
+            rendered = self.render_as_xml(children, depth=depth)
         elif render_as == "raw":
-            return TextResult(self.render_as_raw(children))
+            rendered = self.render_as_raw(children)
         else:
-            return TextResult(self.render_as_markdown(children, depth=depth, alternative_headings="alt" in render_as))
+            rendered = self.render_as_markdown(children, depth=depth, alternative_headings="alt" in render_as)
+        return TextResult(rendered, op=self, parent=children_results)
 
 
 class Section(Renderer):
@@ -131,7 +125,7 @@ class MetaPrompt(Renderer):
             raise ValueError("Without a given data_formatter, responses must be parsed manually.")
 
 
-class FewshotExamples(ScalarComponent):
+class FewshotExamples(Component):
     def __init__(
         self,
         data: DataTable,
@@ -148,7 +142,7 @@ class FewshotExamples(ScalarComponent):
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
         if self._formatted_data is None:
             self._formatted_data = context["data_formatter"].format_datatable(self._data[: self._n_examples])
-        return LLMResult(self._formatted_data)
+        return TextResult(self._formatted_data, op=self)
 
 
 class RandomFewshotExamples(FewshotExamples):
@@ -215,10 +209,10 @@ class EmbeddingFewshotExamples(FewshotExamples):
 
         top_k = deduped_idx[:budget].tolist()
         formatted_data = context["data_formatter"].format_datatable(self._data[top_k])
-        return LLMResult(formatted_data)
+        return TextResult(formatted_data, op=self)
 
 
-class InputData(ScalarComponent):
+class InputData(Component):
     def __init__(
         self,
         id_offset: int = 0,
@@ -228,4 +222,6 @@ class InputData(ScalarComponent):
         self.id_offset = id_offset
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
-        return LLMResult(context["data_formatter"].format_batch(context["data"]["inputs"], offset=self.id_offset))
+        return TextResult(
+            context["data_formatter"].format_batch(context["data"]["inputs"], offset=self.id_offset), op=self
+        )

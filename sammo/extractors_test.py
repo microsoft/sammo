@@ -20,7 +20,7 @@ async def test_split_lines_process():
     assert split_lines._extract_from_single_value("line1\nline2") == ["line1", "line2"]
 
     split_lines = await SplitLines(VerbatimText("line1\nline2"))(MockedRunner, {})
-    assert [o.value for o in split_lines] == ["line1", "line2"]
+    assert split_lines.value == ["line1", "line2"]
 
 
 @pytest.mark.parametrize("expr", ["lambda: x.upper()", "lambda x, y: x.upper()", "3"])

@@ -39,7 +39,6 @@ GRAPH_TEMPLATE = """
     height: 100%;
     overflow: hidden;
   }
-
   .gutter {
     background-color: #eee;
     background-repeat: no-repeat;
@@ -50,6 +49,25 @@ GRAPH_TEMPLATE = """
     background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
     cursor: col-resize;
   }
+  #info {
+	overflow-y: auto;
+  }
+  #info div {
+    font-family: Helvetica, sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    background-color: #d6d8d9;
+    color: #616161;
+    font-size: 11px;
+    padding: 6px;
+  }
+  pre {
+	white-space: pre-wrap;
+	padding: 6px;
+	background-color: #f9f9f9;
+	margin: 0;
+	font-size: 12px;
+  }
   </style>
   <meta charset="utf-8" />
   <title>Callgraph</title>
@@ -59,31 +77,35 @@ GRAPH_TEMPLATE = """
 
 <body>
   <div class="split">
-    <div id="info"></div>
+    <div id="info"><pre>Click on node for details.</pre></div>
     <div id="graph"></div>
   </div>
   <script>
   Split(['#info', '#graph'], {
-    sizes: [15, 85],
-    minSize: [100, 0],
+    sizes: [20, 80],
+    minSize: [150, 0],
     onDragEnd: resizeCyto
   });
+  const DATA = ELEMENTS;
   var cy = cytoscape({
     container: document.getElementById('graph'),
     style: cytoscape.stylesheet().selector('node').style({
-      'content': 'data(label)'
-    }).selector('edge').style({
+      'content': 'data(label)',
+	  'background-color': DATA['node-color'] || 'Teal',
+	  'border-width': DATA['node-border'] || 0,
+    }).selector(':selected').style({'background-color': 'Turquoise'}).selector('edge').style({
       'curve-style': 'bezier',
       'target-arrow-shape': 'triangle',
       'width': 1,
       'line-color': 'black',
       'target-arrow-color': 'black'
     }),
-    elements: ELEMENTS,
+    elements: DATA,
     wheelSensitivity: 0.3,
     layout: {
       name: 'breadthfirst',
-      directed: true
+      directed: true,
+      depthSort: function(a, b){ return a.data('priority') - b.data('priority') }
     }
   });
 
@@ -93,12 +115,19 @@ GRAPH_TEMPLATE = """
   }
   window.addEventListener('resize', resizeCyto);
   cy.on('tap', 'node', function(evt) {
-    var node = evt.target;
-    var details = node.data('details');
-    if (typeof(details) !== 'undefined') {
-      document.getElementById('info').innerHTML = `${details}`;
+    const node = evt.target;
+    const details = node.data('details');
+    const info = document.getElementById('info');
+    info.innerHTML = '';
+
+    if (!details) {
+        info.innerHTML = "<div>Node has no metadata.</div>";
+    } else if (typeof details === 'object' && !Array.isArray(details)) {
+        Object.entries(details).forEach(([key, value]) => {
+            info.innerHTML += `<div>${key}</div><pre>${value}</pre>`;
+        });
     } else {
-      document.getElementById('info').innerHTML = "Node has no metadata.";
+        info.innerHTML = `<pre>${details}</pre>`;
     }
   });
   </script>
@@ -170,7 +199,7 @@ class IFrameRenderer:
     def _repr_html_(self, **kwargs):
         iframe = f"""\
             <iframe srcdoc="{escape(self.raw_html)}" width="{self.width}" height="{self.height}"'
-            "allowfullscreen" style="border:1px solid #e0e0e0;">
+            "allowfullscreen" style="border:1px solid #e0e0e0; box-sizing: border-box;">
             </iframe>"""
         return iframe
 

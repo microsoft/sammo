@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 from __future__ import annotations
-import abc
 import base64
 import re
 import warnings
@@ -38,15 +37,11 @@ class NonRetriableError(Exception):
     pass
 
 
-class MockedRunner:
+class MockedRunner(Runner):
     def __init__(self, return_values=""):
         self._ret_vals = return_values
         self._n_calls = -1
         self.prompt_log = list()
-
-    @property
-    def __class__(self) -> type:
-        return Runner
 
     async def generate_text(self, prompt: str, *args, **kwargs):
         self._n_calls += 1

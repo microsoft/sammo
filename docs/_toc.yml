@@ -2,17 +2,18 @@ format: jb-book
 root: index
 parts:
   - chapters:
-    - file: tutorials/0_quickstart
-  - caption: 💡 Tutorials
+    - file: tutorials/quickstart
+  - caption: 🎓 Learning SAMMO
     numbered: true
     chapters:
-    - glob: tutorials/[!0]_*
+    - glob: tutorials/basics_*
+  - caption: 💡 Examples
+    numbered: true
+    chapters:
+    - glob: tutorials/example_*
   - caption: Special Topics
     chapters:
     - glob: tutorials/special_topics/*
-  - caption: Extending SAMMO
-    chapters:
-    - glob: tutorials/extensions/*
   - caption: 📖 API Reference
     chapters:
     - file: api/sammo/sammo
