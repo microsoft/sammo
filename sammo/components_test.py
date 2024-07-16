@@ -10,13 +10,13 @@ from sammo.runners import MockedRunner
 @pytest.mark.asyncio
 async def test_union():
     res = await Union("a", "b", "c")(None, dict())
-    assert [r.value for r in res] == ["a", "b", "c"]
+    assert res.value == ["a", "b", "c"]
 
 
 @pytest.mark.asyncio
 async def test_for_each():
     res = await ForEach("x", Union("a", "b", "c"), Template(".{{x}}"))(None, dict())
-    assert [r.value for r in res] == [".a", ".b", ".c"]
+    assert res.value == [".a", ".b", ".c"]
 
 
 @pytest.mark.asyncio

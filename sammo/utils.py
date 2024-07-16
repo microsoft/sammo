@@ -20,6 +20,122 @@ __all__ = [
     "serialize_json",
 ]
 
+GRAPH_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <style>
+  body,
+  html {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  .split {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    overflow: hidden;
+  }
+  .gutter {
+    background-color: #eee;
+    background-repeat: no-repeat;
+    background-position: 50%;
+  }
+
+  .gutter.gutter-horizontal {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+    cursor: col-resize;
+  }
+  #info {
+	overflow-y: auto;
+  }
+  #info div {
+    font-family: Helvetica, sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    background-color: #d6d8d9;
+    color: #616161;
+    font-size: 11px;
+    padding: 6px;
+  }
+  pre {
+	white-space: pre-wrap;
+	padding: 6px;
+	background-color: #f9f9f9;
+	margin: 0;
+	font-size: 12px;
+  }
+  </style>
+  <meta charset="utf-8" />
+  <title>Callgraph</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/split.js/1.6.0/split.min.js"></script>
+</head>
+
+<body>
+  <div class="split">
+    <div id="info"><pre>Click on node for details.</pre></div>
+    <div id="graph"></div>
+  </div>
+  <script>
+  Split(['#info', '#graph'], {
+    sizes: [20, 80],
+    minSize: [150, 0],
+    onDragEnd: resizeCyto
+  });
+  const DATA = ELEMENTS;
+  var cy = cytoscape({
+    container: document.getElementById('graph'),
+    style: cytoscape.stylesheet().selector('node').style({
+      'content': 'data(label)',
+	  'background-color': DATA['node-color'] || 'Teal',
+	  'border-width': DATA['node-border'] || 0,
+    }).selector(':selected').style({'background-color': 'Turquoise'}).selector('edge').style({
+      'curve-style': 'bezier',
+      'target-arrow-shape': 'triangle',
+      'width': 1,
+      'line-color': 'black',
+      'target-arrow-color': 'black'
+    }),
+    elements: DATA,
+    wheelSensitivity: 0.3,
+    layout: {
+      name: 'breadthfirst',
+      directed: true,
+      depthSort: function(a, b){ return a.data('priority') - b.data('priority') }
+    }
+  });
+
+  function resizeCyto() {
+    cy.resize();
+    cy.fit();
+  }
+  window.addEventListener('resize', resizeCyto);
+  cy.on('tap', 'node', function(evt) {
+    const node = evt.target;
+    const details = node.data('details');
+    const info = document.getElementById('info');
+    info.innerHTML = '';
+
+    if (!details) {
+        info.innerHTML = "<div>Node has no metadata.</div>";
+    } else if (typeof details === 'object' && !Array.isArray(details)) {
+        Object.entries(details).forEach(([key, value]) => {
+            info.innerHTML += `<div>${key}</div><pre>${value}</pre>`;
+        });
+    } else {
+        info.innerHTML = `<pre>${details}</pre>`;
+    }
+  });
+  </script>
+</body>
+
+</html>
+"""
+
 
 class CodeTimer:
     """Time code with this context manager."""
@@ -83,7 +199,7 @@ class IFrameRenderer:
     def _repr_html_(self, **kwargs):
         iframe = f"""\
             <iframe srcdoc="{escape(self.raw_html)}" width="{self.width}" height="{self.height}"'
-            "allowfullscreen" style="border:1px solid #e0e0e0;">
+            "allowfullscreen" style="border:1px solid #e0e0e0; box-sizing: border-box;">
             </iframe>"""
         return iframe
 

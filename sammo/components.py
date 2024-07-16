@@ -16,11 +16,11 @@ import sammo.utils as utils
 from sammo.base import (
     Component,
     LLMResult,
-    ListComponent,
-    ScalarComponent,
     EmptyResult,
     Runner,
     TimeoutResult,
+    Result,
+    NonEmptyResult,
 )
 from sammo.data import DataTable
 
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["GenerateText", "Output", "Union", "ForEach"]
 
 
-class GenerateText(ScalarComponent):
+class GenerateText(Component):
     """Call the LLM to generate a response.
 
     :param child: The child component to run.
@@ -50,10 +50,10 @@ class GenerateText(ScalarComponent):
 
     def __init__(
         self,
-        child: ScalarComponent,
+        child: Component,
         name=None,
         system_prompt: TUnion[str, None] = None,
-        history: TUnion[ScalarComponent, None] = None,
+        history: TUnion[Component, None] = None,
         seed=0,
         randomness: float = 0,
         max_tokens=None,
@@ -84,8 +84,11 @@ class GenerateText(ScalarComponent):
         priority: int = 0,
     ) -> LLMResult:
         y = await self._child(runner, context, dynamic_context)
+        parents = [y]
         if self._history:
-            history = (await self._history(runner, context, dynamic_context)).history
+            previous_turn = await self._history(runner, context, dynamic_context)
+            parents.append(previous_turn)
+            history = previous_turn.history
         else:
             history = None
         try:
@@ -99,19 +102,19 @@ class GenerateText(ScalarComponent):
                 max_tokens=self._max_tokens,
                 json_mode=self._json_mode,
             )
-            return result.with_parent(y)
+            return result.with_parent(parents).with_op(self)
         except Exception as e:
             logger.warning(f"Failed to generate text: {repr(e)}")
             if self._on_error == "empty_result":
                 if isinstance(e, asyncio.TimeoutError):
-                    return TimeoutResult(repr(e), parent=y)
+                    return TimeoutResult(repr(e), parent=parents, op=self)
                 else:
-                    return EmptyResult(repr(e), parent=y)
+                    return EmptyResult(repr(e), parent=parents, op=self)
             else:
                 raise e
 
 
-class Union(ListComponent):
+class Union(Component):
     """Union of multiple components. Runs all components and returns the union of their results as list.
 
     :param children: The child components to run.
@@ -125,14 +128,30 @@ class Union(ListComponent):
         super().__init__(children, name)
         self.dependencies = list(children)
 
-    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> list[LLMResult]:
-        results = list()
-        for c in self._child:
-            results.append(await c(runner, context, dynamic_context))
-        return self._flatten(results)
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
+        results = [await c(runner, context, dynamic_context) for c in self._child]
+        return NonEmptyResult(self._flatten(results), parent=results, op=self)
 
 
-class ForEach(ListComponent):
+class JoinStrings(Union):
+    """Join the results of multiple components into a single string.
+
+    :param children: The child components to run.
+    :param separator: The separator to use between the strings.
+    :param name: The name of the component for later querying.
+    """
+
+    def __init__(self, *children: Component, separator: str, name: str | None = None):
+        super().__init__(*children, name=name)
+        self._separator = separator
+
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
+        results = [await c(runner, context, dynamic_context) for c in self._child]
+        joined = self._separator.join(self._flatten(results))
+        return NonEmptyResult(joined, parent=results, op=self)
+
+
+class ForEach(Component):
     """Run a component for each output element of a child.
     The operator is run in parallel and the results are flattened.
 
@@ -147,7 +166,7 @@ class ForEach(ListComponent):
     def __init__(
         self,
         loop_variable: str,
-        child: ListComponent,
+        child: Component,
         operator: Component,
         name: str | None = None,
     ):
@@ -157,16 +176,15 @@ class ForEach(ListComponent):
         self._operator = operator
         self.dependencies = [self._collection] + self._operator.dependencies
 
-    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> list[LLMResult]:
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
         collection = await self._collection(runner, context, dynamic_context)
         tasks = []
         if dynamic_context is None:
             dynamic_context = {}
-        if not isinstance(collection, list):
-            collection = [collection]
+        assert isinstance(collection, Result)
 
         async with quattro.TaskGroup() as tg:
-            for x in collection:
+            for x in collection.values_as_list():
                 tasks.append(
                     tg.create_task(
                         self._operator(
@@ -176,8 +194,8 @@ class ForEach(ListComponent):
                         )
                     )
                 )
-
-        return self._flatten([t.result() for t in tasks])
+        results = [t.result() for t in tasks]
+        return NonEmptyResult(self._flatten(results), parent=[collection] + results, op=self)
 
 
 class Minibatch:
@@ -228,7 +246,7 @@ class Output(Component):
         self,
         child: Component,
         minibatch_size=1,
-        on_error: Literal["raise", "empty_result", "backoff"] = "raise",
+        on_error: Literal["raise", "empty_result"] = "raise",
     ):
         super().__init__(child)
         self.row_batch_size = minibatch_size
@@ -241,7 +259,7 @@ class Output(Component):
         data: TUnion[DataTable, list, None] = None,
         progress_callback: TUnion[Callable, bool] = True,
         priority: int = 0,
-        on_error: TUnion[Literal["raise", "empty_result", "backoff"], None] = None,
+        on_error: TUnion[Literal["raise", "empty_result"], None] = None,
     ) -> DataTable:
         """Synchronous version of `arun`."""
         return utils.sync(self.arun(runner, data, progress_callback, priority, on_error))
@@ -260,7 +278,7 @@ class Output(Component):
         data: TUnion[DataTable, list, None] = None,
         progress_callback: TUnion[Callable, bool] = True,
         priority: int = 0,
-        on_error: TUnion[Literal["raise", "empty_result", "backoff"], None] = None,
+        on_error: TUnion[Literal["raise", "empty_result"], None] = None,
     ):
         """
         Run the component asynchronously and return a DataTable with the results.
@@ -270,7 +288,7 @@ class Output(Component):
         :param progress_callback: Called after each minibatch. If True, shows default progress bar.
                                   If False, shows nothing.
         :param priority: The priority to use for scheduling (highest by default).
-        :param on_error: The error handling strategy to use. Backoff re-runs the prompt with minibatch size 1.
+        :param on_error: The error handling strategy to use.
         """
         if isinstance(data, list):
             table = DataTable(data)
@@ -290,39 +308,29 @@ class Output(Component):
         jobs = self._create_minibatch_jobs(runner, table, progress_callback)
 
         scheduler = Scheduler(runner, jobs, base_priority=priority)
-
         await scheduler.arun()
 
         results = table.copy()
-        rerun = list()
         for job in jobs:
             minibatch_idx = job.original_idx
             result = await job()
-            result_len = len(result) if hasattr(result, "__len__") else 1
-            if self.reshaping_needed and result_len != len(minibatch_idx):
+            assert isinstance(result, Result)
+            values = result.values_as_list()
+
+            result_len = len(values) if hasattr(values, "__len__") else 1
+            if not self.reshaping_needed:
+                results.outputs[minibatch_idx] = NonEmptyResult(result.value, parent=result, op=self)
+            elif result_len != len(minibatch_idx):
                 if on_error == "raise":
                     raise ValueError(
                         f"Minibatch results do not have right length (need: {len(minibatch_idx)}, got: {result_len})"
                     )
                 elif on_error == "empty_result":
-                    result = EmptyResult("Number of returned results was inconsistent.", parent=result)
-                elif on_error == "backoff":
-                    for j in minibatch_idx:
-                        rerun.append(Minibatch(self._child, table[j], runner, None, j))
-                    result = None
-            results.outputs[minibatch_idx] = result
-
-        if rerun:
-            colbar = CompactProgressBars()
-            progress_callback = colbar.get("reruns", total=len(rerun)).update
-            for j in rerun:
-                j.progress_callback = progress_callback
-            scheduler = Scheduler(runner, rerun, base_priority=priority)
-            await scheduler.arun()
-            for job in rerun:
-                minibatch_idx = job.original_idx
-                result = await job()
-                results.outputs[minibatch_idx] = result
+                    results.outputs[minibatch_idx] = EmptyResult(
+                        "Number of returned results was inconsistent.", parent=result
+                    )
+            else:
+                results.outputs[minibatch_idx] = [NonEmptyResult(v, parent=result, op=self) for v in values]
 
         return results
 

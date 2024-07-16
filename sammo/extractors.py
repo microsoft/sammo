@@ -21,55 +21,44 @@ from markdown_it.tree import SyntaxTreeNode
 import xmltodict
 import yaml
 
-from sammo.base import ListComponent, Component, LLMResult, EmptyResult, ParseResult, Runner, NonEmptyResult
+from sammo.base import Component, EmptyResult, ParseResult, Runner, Result
 
 logger = logging.getLogger(__name__)
 
 
-class Extractor(ListComponent):
+class Extractor(Component):
     """Base class for all extractors. Extractors take the output of a child component and extract data from it.
 
     :param child: The child component whose output gets processed.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
-    def __init__(self, child: Component, on_error: Literal["raise", "empty_result"] = "raise", flatten=True):
+    def __init__(self, child: Component, on_error: Literal["raise", "empty_result"] = "raise"):
         super().__init__(child)
         self._on_error = on_error
         self.dependencies = [self._child]
-        self._flatten = flatten
 
-    async def _call(
-        self, runner: Runner, context: dict, dynamic_context: frozendict | None = None
-    ) -> list[ParseResult | EmptyResult]:
+    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None = None) -> Result:
         x = await self._child(runner, context, dynamic_context)
 
-        if not isinstance(x, list):
-            x = [x]
+        assert isinstance(x, Result)
         processed = list()
-        for y in x:
+        for y in x.values_as_list():
             if isinstance(y, EmptyResult):
+                # pass through empty results
                 processed.append(y)
             else:
                 try:
-                    if isinstance(y, NonEmptyResult):
-                        vals = y.value
-                    else:
-                        vals = y
-                    result = [ParseResult(v, parent=y) for v in self._extract_from_single_value(vals)]
-                    if self._flatten:
-                        processed.extend(result)
-                    else:
-                        processed.append(result)
+                    assert not isinstance(y, Result)
+                    processed.extend(self._extract_from_single_value(y))
                 except Exception as e:
                     logger.warning(f"Error extracting from {str(x)[:100]}: {e}")
                     if self._on_error == "raise":
                         raise e
                     else:
-                        processed.append(EmptyResult(parent=y))
+                        processed.append(EmptyResult())
 
-        return processed
+        return ParseResult(processed, parent=x, op=self)
 
     @abc.abstractmethod
     def _extract_from_single_value(self, x: str) -> list:
@@ -81,7 +70,6 @@ class DefaultExtractor(Extractor):
 
     :param child: The child component whose output gets processed.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
     def _extract_from_single_value(self, x: str) -> list:
@@ -93,7 +81,6 @@ class SplitLines(Extractor):
 
     :param child: The child component whose output gets processed.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
     def _extract_from_single_value(self, x: str) -> list:
@@ -105,7 +92,6 @@ class StripWhitespace(Extractor):
 
     :param child: The child component whose output gets processed.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
     def _extract_from_single_value(self, x: str) -> list:
@@ -120,7 +106,6 @@ class LambdaExtractor(Extractor):
     :param child: The child component whose output gets processed.
     :param lambda_src_code: The lambda expression as a string.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
     def __init__(
@@ -128,9 +113,8 @@ class LambdaExtractor(Extractor):
         child: Component,
         lambda_src_code: str,
         on_error: Literal["raise", "empty_result"] = "raise",
-        flatten=True,
     ):
-        super().__init__(child, on_error, flatten)
+        super().__init__(child, on_error)
         tree = ast.parse(lambda_src_code, mode="eval")
         if not isinstance(tree.body, ast.Lambda):
             raise ValueError("Source code passed must be a lambda expression.")
@@ -241,7 +225,6 @@ class MarkdownParser(Extractor):
 
     :param child: The child component whose output gets processed.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
     @classmethod
@@ -280,7 +263,6 @@ class YAMLParser(Extractor):
 
     :param child: The child component whose output gets processed.
     :param on_error: What to do if an error occurs. Either 'raise' or 'empty_result'.
-    :param flatten: Whether to flatten the output.
     """
 
     def _extract_from_single_value(self, x: str):

@@ -3,13 +3,16 @@
 from __future__ import annotations
 import abc
 import copy
+import json
 import re
 
 from beartype.typing import Callable, Any
 from frozendict import frozendict
 import pyglove as pg
 import pybars
+from pyglove import Symbolic
 from tabulate import tabulate
+from sammo.utils import IFrameRenderer, GRAPH_TEMPLATE
 
 # monkey-patch pybars to disable HTML escaping
 pybars.Compiler._builder.add_escaped_expand = pybars.Compiler._builder.add_expand
@@ -54,18 +57,19 @@ class Runner:
 
 
 class Result:
-    __slots__ = "parent", "value", "stored_values"
+    __slots__ = "parent", "value", "stored_values", "op"
 
-    def __init__(self, value, parent=None, stored_values=None):
+    def __init__(self, value, parent=None, stored_values=None, op=None):
         self.value = value
         self.parent = parent
         self.stored_values = stored_values
+        self.op = op
 
     def to_json(self):
         return self.value
 
     @classmethod
-    def bfs(cls, start, match_condition: Callable):
+    def bfs(cls, start, match_condition: Callable | None = None):
         """Breadth-first search returning all nodes that match the given condition.
 
         Args:
@@ -74,7 +78,7 @@ class Result:
         matches = list()
         while queue:
             node = queue.pop(0)
-            if match_condition(node):
+            if match_condition is None or match_condition(node):
                 matches.append(node)
             if isinstance(node, Result):
                 queue.extend(node.parents)
@@ -82,6 +86,10 @@ class Result:
 
     def with_parent(self, parent):
         self.parent = parent
+        return self
+
+    def with_op(self, op):
+        self.op = op
         return self
 
     def clone_with_stored_value(self, name, value):
@@ -115,6 +123,39 @@ class Result:
         if as_list:
             return value if isinstance(value, list) else [value]
         return value
+
+    def values_as_list(self):
+        if self.value is None:
+            return []
+        elif isinstance(self.value, list):
+            return self.value
+        else:
+            return [self.value]
+
+    def plot_call_trace(self):
+        queue = [self]
+        nodes = list()
+        edges = list()
+        while queue:
+            node = queue.pop(0)
+            node_data = {
+                "id": id(node),
+                "label": node.op.__class__.__name__ if node.op is not None else node.__class__.__name__,
+                "priority": len(nodes),
+                "details": {
+                    "Output": node.value,
+                    "Parameters": node.op.to_short_string(max_depth=1, include_root=False)
+                    if node.op is not None
+                    else "",
+                },
+            }
+            nodes.append({"data": node_data})
+            if isinstance(node, Result):
+                queue.extend(node.parents)
+                for parent in node.parents:
+                    edges.append({"data": {"target": id(node), "source": id(parent)}})
+        graph = json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False)
+        return IFrameRenderer(GRAPH_TEMPLATE.replace("ELEMENTS", graph))
 
 
 class NonEmptyResult(Result):
@@ -167,8 +208,8 @@ class ParseResult(NonEmptyResult):
 
 
 class EmptyResult(Result):
-    def __init__(self, value=None, parent=None, stored_values=None):
-        super().__init__(value, parent, stored_values)
+    def __init__(self, value=None, parent=None, stored_values=None, op=None):
+        super().__init__(value, parent, stored_values, op=None)
 
 
 class TimeoutResult(EmptyResult):
@@ -286,7 +327,10 @@ class Component:
         if compiled_query.child_selector is not None:
             for i in range(len(matches)):
                 path, val = matches[i]
-                matches[i] = (path + "." + compiled_query.child_selector, val.sym_get(compiled_query.child_selector))
+                matches[i] = (
+                    path + "." + compiled_query.child_selector,
+                    val.sym_get(compiled_query.child_selector),
+                )
 
         if not matches:
             return None
@@ -318,15 +362,65 @@ class Component:
             context[key] = await self._call(runner, context, dynamic_context)
         return context[key]
 
-    def print_structure(self):
+    def to_short_string(self, max_depth=None, include_root=True):
+        out = list()
+
         def t(k, v, p):
             if not k.is_root:
-                print(f"{k.depth*'   '}{k.key}: {v.__class__.__name__}")
+                if isinstance(v, Component):
+                    name = v.__class__.__name__
+                else:
+                    name = v
+                out.append(f"{(k.depth-1)*'   '}- {k.key}: {name}")
+            elif include_root:
+                out.append(f"{v.__class__.__name__}()")
+            if max_depth is not None and k.depth >= max_depth:
+                return pg.TraverseAction.CONTINUE
             else:
-                print(k, v.__class__.__name__)
-            return pg.TraverseAction.ENTER
+                return pg.TraverseAction.ENTER
 
         pg.traverse(self, t)
+        return "\n".join(out)
+
+    def plot_program(self):
+        queue = [self]
+        nodes = list()
+        edges = list()
+
+        def to_list(x):
+            if isinstance(x, list):
+                return x
+            elif isinstance(x, dict):
+                return list(x.values())
+            else:
+                return [x]
+
+        while queue:
+            node = queue.pop(0)
+            node_data = {
+                "id": id(node),
+                "label": node.__class__.__name__,
+                "priority": len(nodes),
+                "details": {
+                    "Parameters": node.to_short_string(max_depth=1, include_root=False)
+                    if isinstance(node, Component)
+                    else str(node),
+                },
+            }
+            nodes.append({"data": node_data})
+            children = list()
+            if isinstance(node, Symbolic.ObjectType):
+                children = node.sym_values()
+            for child in children:
+                for grandchild in to_list(child):
+                    if isinstance(grandchild, Symbolic.ObjectType):
+                        edges.append({"data": {"target": id(node), "source": id(grandchild)}})
+                        queue.append(grandchild)
+
+        graph = json.dumps(
+            {"nodes": nodes, "edges": edges, "node-color": "white", "node-border": 1}, ensure_ascii=False
+        )
+        return IFrameRenderer(GRAPH_TEMPLATE.replace("ELEMENTS", graph))
 
     @abc.abstractmethod
     async def _call(
@@ -337,18 +431,6 @@ class Component:
     def store_as(self, name: str):
         return StoreAs(self, name)
 
-
-class ScalarComponent(Component):
-    @abc.abstractmethod
-    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None = None) -> LLMResult:
-        pass
-
-
-class ListComponent(Component):
-    @abc.abstractmethod
-    async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None = None) -> list[LLMResult]:
-        pass
-
     @staticmethod
     def _flatten(obj: list):
         results = list()
@@ -357,8 +439,10 @@ class ListComponent(Component):
                 results.append(x)
             else:
                 results.extend(x)
-
-        return results
+        flattened = list()
+        for r in results:
+            flattened += r.values_as_list() if isinstance(r, Result) else [r]
+        return flattened
 
 
 class StoreAs:
@@ -372,7 +456,7 @@ class StoreAs:
             return result.clone_with_stored_value(self._name, result.value)
 
 
-class Template(ScalarComponent):
+class Template(Component):
     """Simple template-based text component that uses Python's string formatting to fill in
     values. The template variables available are:
 
@@ -411,7 +495,7 @@ class Template(ScalarComponent):
         }
         dynamic_context = dict() if dynamic_context is None else dynamic_context
         result = self._fill(**data, **fill_values, **dynamic_context)
-        return TextResult(result)
+        return TextResult(result, parent=list(fill_values.values()) if fill_values else None, op=self)
 
     def _fill(self, **kwargs) -> str:
         kwargs = {k: self._unwrap_results(v) for k, v in kwargs.items()}

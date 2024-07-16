@@ -100,7 +100,7 @@ async def test_format_nested_json_item_orient():
     assert returned == expected
 
     result = await test.get_extractor(VerbatimText(returned))(None, {})
-    assert result[0].to_json() == {"l": 1}
+    assert result.value == [{"l": 1}]
 
 
 @pytest.mark.asyncio
@@ -115,7 +115,7 @@ async def test_format_nested_json_item_orient_with_ids():
     assert returned == expected
 
     result = await test.get_extractor(VerbatimText(returned))(None, {})
-    assert result[0].to_json() == {"l": 1}
+    assert result.value == [{"l": 1}]
 
 
 def test_xml_flat_item_orient():
