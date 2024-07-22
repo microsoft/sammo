@@ -11,17 +11,11 @@ from dspy.retrieve.chromadb_rm import ChromadbRM
 from dspy.evaluate import Evaluate
 from dspy.teleprompt import MIPRO
 
-BASE_DIR = pathlib.Path(__file__).parent / "rag_tuning_sammo"
+BASE_DIR = pathlib.Path(__file__).parent
 RESULTS_DIR = BASE_DIR / "dspy"
 RESULTS_DIR.mkdir(exist_ok=True)
 DB_PATH = str(BASE_DIR / "chroma")
-TASKS = ["smcalflow", "geo880", "overnight"]
-
-DATA_PATHS = {
-    "smcalflow": r"C:\Data\smcalflow_cs_simple_v3\all.jsonl",
-    "geo880": r"C:\Data\geo880_v2\all.jsonl",
-    "overnight": r"C:\Data\overnight_socialnetwork\all.jsonl",
-}
+DATA = BASE_DIR / "data_splits.json"
 CONFIG_PATH = pathlib.Path(__file__).parent.parent.parent / "config"
 MODEL_CONFIGS = {
     "gpt-3.5": {
@@ -119,25 +113,6 @@ def accuracy(gold, pred, trace=None) -> bool:
     return normalize(pred.answer) == normalize(gold.answer)
 
 
-def load_task(task_id, metadata_path=BASE_DIR.parent):
-    with open(metadata_path / "data_splits.json") as f:
-        meta_data = json.load(f)[task_id]
-    if not pathlib.Path(DATA_PATHS[task_id]).exists():
-        raise FileNotFoundError(
-            f"Data file {DATA_PATHS[task_id]} not found. "
-            "You can download it from https://github.com/allenai/code-semparse/tree/main/datasets"
-        )
-    full_data = pd.read_json(DATA_PATHS[task_id], lines=True).set_index("qid")
-    output = dict(task_id=task_id, constants=meta_data["dsl"])
-    for split in ["train", "test", "incontext"]:
-        joined = pd.DataFrame({"qid": meta_data[split]}).set_index("qid").join(full_data)
-        output[split] = dict(
-            data=joined.to_dict(orient="records"),
-            constants=meta_data["dsl"],
-        )
-    return output
-
-
 def init_retriever(coll_name, docs, overwrite=False):
     client = chromadb.PersistentClient(path=DB_PATH)
     if coll_name in [c.name for c in client.list_collections()]:
@@ -148,7 +123,7 @@ def init_retriever(coll_name, docs, overwrite=False):
 
     collection = client.create_collection(name=coll_name, embedding_function=EMBEDDING_FUNC)
     collection.add(
-        documents=[f"Input: {doc['source']}\nAnswer:{doc['target']}" for doc in docs],
+        documents=[f"Input: {doc['input']}\nAnswer:{doc['output']}" for doc in docs],
         ids=[str(i) for i in range(len(docs))],
     )
 
@@ -175,7 +150,9 @@ def main(
             abort=True,
             default=True,
         )
-    task = load_task(task_id)
+    task = json.loads(pathlib.Path(DATA).read_bytes())[task_id]
+    task["task_id"] = task_id
+
     model_config = MODEL_CONFIGS[llm]
     config = json.loads(model_config["credentials"].read_text())
     llm_class = {"OpenAI": dspy.OpenAI, "DeepInfra": DeepInfra, "Together": TogetherPatched}[model_config["class"]]
@@ -183,7 +160,7 @@ def main(
     num_threads = 1 if debug else num_threads
     run_id = f"{llm}_{task['task_id']}"
 
-    init_retriever(task["task_id"], task["incontext"]["data"])
+    init_retriever(task["task_id"], task["incontext"]["records"])
     retriever_model = ChromadbRM(
         task["task_id"],
         DB_PATH,
@@ -193,12 +170,14 @@ def main(
     dspy.settings.configure(lm=runner, rm=retriever_model)
 
     # Tell DSPy that the 'input' field is the input. Any other fields are labels and/or metadata.
-    trainset = [dspy.Example(input=x["source"], answer=x["target"]).with_inputs("input") for x in task["train"]["data"]]
-    testset = [dspy.Example(input=x["source"], answer=x["target"]).with_inputs("input") for x in task["test"]["data"]]
+    trainset = [
+        dspy.Example(input=x["input"], answer=x["output"]).with_inputs("input") for x in task["train"]["records"]
+    ]
+    testset = [dspy.Example(input=x["input"], answer=x["output"]).with_inputs("input") for x in task["test"]["records"]]
     if debug:
         trainset = trainset[:5]
         testset = testset[:5]
-    dspy_program = RAG(n_fewshot=n_fewshot, instructions=task["constants"]["full_dd"])
+    dspy_program = RAG(n_fewshot=n_fewshot, instructions=task["train"]["constants"]["full_dd"])
     if show_example or debug:
         dspy_program(input=trainset[0].input)
         runner.inspect_history(n=1)
