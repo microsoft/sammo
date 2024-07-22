@@ -51,12 +51,8 @@ MODEL_CONFIGS = {
     },
 }
 MODELS = list(MODEL_CONFIGS.keys())
-DATA_PATHS = {
-    "smcalflow": r"C:\Data\smcalflow_cs_simple_v3\all.jsonl",
-    "geo880": r"C:\Data\geo880_v2\all.jsonl",
-    "overnight": r"C:\Data\overnight_socialnetwork\all.jsonl",
-}
-TASKS = list(DATA_PATHS.keys())
+DATA = MAIN_FOLDER.parent / "data_splits_new.json"
+TASKS = ["smcalflow", "geo880", "overnight"]
 
 
 def accuracy(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
@@ -108,22 +104,9 @@ class RagSearchSpace:
         return Output(instructions.with_extractor("empty_result"), minibatch_size=1, on_error="empty_result")
 
 
-def load_task(task_id, data_paths=DATA_PATHS, metadata_path=MAIN_FOLDER.parent):
-    with open(metadata_path / "data_splits.json") as f:
-        meta_data = json.load(f)[task_id]
-    if not pathlib.Path(data_paths[task_id]).exists():
-        raise FileNotFoundError(
-            f"Data file {data_paths[task_id]} not found. "
-            "You can download it from https://github.com/allenai/code-semparse/tree/main/datasets"
-        )
-    full_data = pd.read_json(data_paths[task_id], lines=True).set_index("qid")
-    output = dict()
-    for split in ["train", "test", "incontext"]:
-        joined = pd.DataFrame({"qid": meta_data[split]}).set_index("qid").join(full_data)
-        output[split] = DataTable.from_pandas(
-            joined, output_fields="target", input_fields="source", constants=meta_data["dsl"]
-        )
-    return output
+def load_task(task_id, data_path=DATA):
+    task_info = json.loads(pathlib.Path(data_path).read_bytes())[task_id]
+    return {k: DataTable.from_json(v) for k, v in task_info.items()}
 
 
 @click.command()
