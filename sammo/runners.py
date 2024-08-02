@@ -144,7 +144,7 @@ class BaseRunner(Runner):
                         raise TimeoutError("Cached timeout")
                 else:
                     json = self._cache[fingerprint]
-                    response_obj = self._to_llm_result(request, json, fingerprint)
+                    response_obj = self._augmented_llm_result(request, json, fingerprint)
                     self._costs += response_obj.costs
                     return response_obj
 
@@ -156,7 +156,7 @@ class BaseRunner(Runner):
                     job_handle = await self._throttler.wait_in_line(priority)
                     async with async_timeout.timeout(self._timeout):
                         json = await self._call_backend(request)
-                    response_obj = self._llm_result(request, json, fingerprint)
+                    response_obj = self._augmented_llm_result(request, json, fingerprint)
                     response_obj.retries = cur_try
                     self._throttler.update_job_stats(job_handle, cost=response_obj.costs.total)
                     self._costs += response_obj.costs
@@ -181,7 +181,7 @@ class BaseRunner(Runner):
 
             raise RuntimeError(f"Could not get completion for {request.params}")
 
-    def _llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
+    def _augmented_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
         result = self._to_llm_result(request, json_data, fingerprint)
         result.fingerprint = fingerprint
         result.extra_data = json_data

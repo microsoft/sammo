@@ -138,15 +138,14 @@ class Result:
         edges = list()
         while queue:
             node = queue.pop(0)
+            is_operator = hasattr(node, "op") and node.op
             node_data = {
                 "id": id(node),
-                "label": node.op.__class__.__name__ if node.op is not None else node.__class__.__name__,
+                "label": node.op.__class__.__name__ if is_operator else node.__class__.__name__,
                 "priority": len(nodes),
                 "details": {
-                    "Output": node.value,
-                    "Parameters": node.op.to_short_string(max_depth=1, include_root=False)
-                    if node.op is not None
-                    else "",
+                    "Output": node.value if hasattr(node, "value") else str(node),
+                    "Parameters": node.op.to_short_string(max_depth=1, include_root=False) if is_operator else "",
                 },
             }
             nodes.append({"data": node_data})

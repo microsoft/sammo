@@ -207,7 +207,7 @@ class Throttler:
                 running = [x for x in self._task_logs if x.status == JobStatus.RUNNING]
             successful = [x for x in completed if x.status == JobStatus.SUCCESSFUL]
             failed = [x for x in completed if x.status == JobStatus.FAILED]
-            costs = sum([x.cost for x in completed])
+            costs = sum([x.costs for x in completed])
             rejected = [x for x in completed if x.status == JobStatus.REJECTED]
 
             logger.info(
