@@ -357,12 +357,13 @@ class OutputAccessor(Accessor):
         else:
             raise ValueError("Value to be assigned has different length that given indices!")
 
-    def cost(self, aggregate=True):
+    @property
+    def costs(self):
         costs = dict()
         for x in self.llm_results:
             for y in x or []:
                 costs[y.fingerprint] = y.costs
-        return sum(costs.values(), Costs()) if aggregate else costs
+        return sum(costs.values(), Costs())
 
     def nonempty_values(self):
         """Return all non-empty values."""
@@ -385,16 +386,12 @@ class OutputAccessor(Accessor):
         return len([x for x in data if isinstance(x, TimeoutResult)]) / len(data)
 
     @property
-    def total_cost(self):
-        return self.cost().total
-
-    @property
     def input_cost(self):
-        return self.cost().input
+        return self.costs.input
 
     @property
     def output_cost(self):
-        return self.cost().output
+        return self.costs.output
 
     @property
     def llm_results(self):

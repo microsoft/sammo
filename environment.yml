@@ -6,4 +6,4 @@ dependencies:
   - pandas
   - pip
   - pip:
-    - sammo==0.1.0.4
+    - sammo==0.2.1
