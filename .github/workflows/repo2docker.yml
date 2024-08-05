@@ -1,21 +1,12 @@
-name: Build docker image and publish
-on: push
+name: Publish on MyBinder
+on: [push]
 
 jobs:
-  binder:
+  Create-MyBinderOrg-Cache:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-
-    - name: update jupyter dependencies with repo2docker
+    - name: cache binder build on mybinder.org
       uses: jupyterhub/repo2docker-action@master
       with:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        BINDER_CACHE: true
-        PUBLIC_REGISTRY_CHECK: true
+        NO_PUSH: true
+        MYBINDERORG_TAG: ${{ github.event.ref }}
