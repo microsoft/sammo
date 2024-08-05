@@ -2,7 +2,7 @@
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/sammo.svg)](https://pypi.python.org/pypi/sammo)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/docs/tutorials/quickstart.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/microsoft/sammo/main?urlpath=tree/docs/tutorials/quickstart.ipynb)
 
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
@@ -11,7 +11,7 @@ A flexible, easy-to-use library for running and optimizing prompts for Large Lan
 ## How to Get Started
 Go to the [user guide](https://microsoft.github.io/sammo/) for examples, how-tos, and API reference.
 
-Just want to have a quick look? Try the [live demo on Binder](https://mybinder.org/v2/gh/microsoft/sammo/master?urlpath=tree/docs/tutorials/quickstart.ipynb).
+Just want to have a quick look? Try the [live demo on Binder](https://mybinder.org/v2/gh/microsoft/sammo/main?urlpath=tree/docs/tutorials/quickstart.ipynb).
 
 <!--start-->
 ### Install library only
