@@ -44,6 +44,7 @@ class GenerateText(Component):
     :param randomness: The how deterministic the LLM output should be (typically corresponds to temperature).
     :param max_tokens: The maximum number of tokens to generate, defaulting to max length supported by `Runner`.
     :param on_error: What to do in case the text cannot be generated.
+    :param runner: If supplied, the given runner will be used for this generation rather than the Runner passed to _call
     """
 
     NEEDS_SCHEDULING = True
@@ -59,6 +60,8 @@ class GenerateText(Component):
         max_tokens=None,
         json_mode: bool = False,
         on_error: Literal["raise", "empty_result"] = "empty_result",
+        *,  # the following arguments are keyword only
+        runner: Runner | None = None,
     ):
         super().__init__(child, name)
 
@@ -72,6 +75,7 @@ class GenerateText(Component):
         self._on_error = on_error
         self._json_mode = json_mode
         self.dependencies = [self._child, self._history] if self._history else [self._child]
+        self._override_runner = runner
 
         if seed > 0 and randomness == 0:
             warnings.warn("Seed is being used but randomness is 0.")
@@ -83,6 +87,9 @@ class GenerateText(Component):
         dynamic_context: frozendict | None,
         priority: int = 0,
     ) -> LLMResult:
+        if self._override_runner is not None:
+            runner = self._override_runner
+
         y = await self._child(runner, context, dynamic_context)
         parents = [y]
         if self._history:
