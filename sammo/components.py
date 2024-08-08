@@ -87,9 +87,6 @@ class GenerateText(Component):
         dynamic_context: frozendict | None,
         priority: int = 0,
     ) -> LLMResult:
-        if self._override_runner is not None:
-            runner = self._override_runner
-
         y = await self._child(runner, context, dynamic_context)
         parents = [y]
         if self._history:
@@ -98,8 +95,14 @@ class GenerateText(Component):
             history = previous_turn.history
         else:
             history = None
+
         try:
-            result = await runner.generate_text(
+            if self._override_runner is not None:
+                runner_for_generation = self._override_runner
+            else:
+                runner_for_generation = runner
+
+            result = await runner_for_generation.generate_text(
                 y.value,
                 priority=priority,
                 system_prompt=self._system_prompt,
