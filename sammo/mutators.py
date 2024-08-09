@@ -372,12 +372,13 @@ class ShortenSegment(Mutator):
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state: int = 42
     ) -> list[MutatedCandidate]:
-        segment_path, segment_content = candidate.query(self._path_descriptor, return_path=True)
-        segment_path += ".content"
+        segments = candidate.query(self._path_descriptor, return_path=True, max_matches=None)
+        segment_content = segments[0][1]
+        segment_paths = [s[0] + ".content" for s in segments]
         segment_content = segment_content.static_text()
         rewritten = await self._rewrite(runner, segment_content, n_mutations, random_state)
         return [
-            MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={segment_path: r}))
+            MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={p: r for p in segment_paths}))
             for r in rewritten
         ]
 
