@@ -20,6 +20,19 @@ def basic_template():
     )
 
 
+def duplicate_template():
+    return Output(
+        MetaPrompt(
+            [
+                Section(name="test", content="The big ball rolled over the street."),
+                Section(name="test", content="The big ball rolled over the street."),
+            ],
+            data_formatter=PlainFormatter(),
+            render_as="markdown",
+        )
+    )
+
+
 @pytest.mark.slow
 def test_parsing():
     assert ["The big ball ", "rolled over the street", "."] == SyntaxTreeMutator.get_phrases(
@@ -35,6 +48,16 @@ async def test_paraphrase():
     assert len(result) == 2
     assert result[0].candidate.query({"name": "test", "_child": "content"}) == "1"
     assert result[1].candidate.query({"name": "test", "_child": "content"}) == "2"
+
+
+@pytest.mark.asyncio
+async def test_paraphrase_with_duplicates():
+    runner = MockedRunner(["1", "2"])
+    mutator = Paraphrase(path_descriptor={"name": "test"})
+    result = await mutator.mutate(duplicate_template(), MagicMock(), runner, n_mutations=2, random_state=42)
+    assert len(result) == 2
+    assert result[0].candidate.query({"name": "test", "_child": "content"}, max_matches=None) == ["1", "1"]
+    assert result[1].candidate.query({"name": "test", "_child": "content"}, max_matches=None) == ["2", "2"]
 
 
 @pytest.mark.asyncio

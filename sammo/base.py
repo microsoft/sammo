@@ -315,8 +315,8 @@ class Component:
 
         :param regex_or_query: A regex string or a query dict or a CompiledQuery object.
         :param return_path: Whether to return a tuple of (path, value) or just the value.
-        :param max_matches: The maximum number of matches to return.
-        :return: Either component, tuple of (path, component) or None if no match was found.
+        :param max_matches: The maximum number of matches to return. None returns everything.
+        :return: Either component, tuple of (path, component) or None if no match was found. List if max_matches > 1.
         """
         compiled_query = CompiledQuery.from_path(regex_or_query)
         matches = list(pg.query(self, **compiled_query.query).items())
@@ -333,10 +333,9 @@ class Component:
 
         if not matches:
             return None
-        elif return_path:
-            return matches[0]
         else:
-            return matches[0][1]
+            projected = matches if return_path else [m[1] for m in matches]
+            return projected[0] if max_matches == 1 else projected
 
     def replace_static_text(self, regex_or_query: str | dict | CompiledQuery, new_text: str):
         me = pg.clone(self)
