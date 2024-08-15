@@ -1,4 +1,4 @@
-name: Prebuild Binder
+name: Cache MyBinder
 on:
   push:
     branches:
@@ -26,7 +26,7 @@ jobs:
       - name: Install Playwright
         run: |
           pip install playwright
-          playwright install  # Install necessary browsers for Playwright
+          playwright install chromium # Install necessary browsers for Playwright
       - name: Run upload.py script
         run: |
-          python .github/prebuild_binder.py
+          python .github/cache_mybinder.py
