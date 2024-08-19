@@ -7,11 +7,11 @@ parts:
     numbered: true
     chapters:
     - glob: tutorials/basics_*
-  - caption: 💡 Examples
+  - caption: 💡 Using SAMMO
     numbered: true
     chapters:
     - glob: tutorials/example_*
-  - caption: Special Topics
+  - caption: 🔌 LLM APIs
     chapters:
     - glob: tutorials/special_topics/*
   - caption: 📖 API Reference
