@@ -215,8 +215,29 @@ class BaseRunner(Runner):
     def _rest_url(self):
         return (self._api_config.get("base_url", None) or self.BASE_URL) + self.SUFFIX
 
+    @staticmethod
+    def _purge_none_values(d: dict):
+        return {k: v for k, v in d.items() if v is not None}
 
-class OpenAIBaseRunner(BaseRunner):
+
+class RestRunner(BaseRunner):
+    async def _call_backend(self, request: dict) -> dict:
+        async with self._get_session() as session:
+            async with session.post(
+                self._rest_url(),
+                json=request,
+                headers=self._get_headers(),
+            ) as response:
+                text = await response.json()
+                if response.status in [429, 500, 503, 529]:
+                    raise RetriableError(f"Server error: {response.status} {text}")
+                elif response.status == 200:
+                    return text
+                else:
+                    raise NonRetriableError(f"Server error: {response.status} {text}")
+
+
+class OpenAIBaseRunner(RestRunner):
     @classmethod
     def _get_equivalence_class(cls, model_id: str) -> str:
         if model_id.startswith("gpt-3"):
@@ -225,21 +246,6 @@ class OpenAIBaseRunner(BaseRunner):
             return "gpt-4"
         else:
             return model_id
-
-    async def _call_backend(self, request: dict) -> dict:
-        async with self._get_session() as session:
-            async with session.post(
-                self._rest_url(),
-                json=request | {"model": self._model_id},
-                headers=self._get_headers(),
-            ) as response:
-                text = await response.json()
-                if response.status in [429, 500, 503]:
-                    raise RetriableError(f"Server error: {response.status} {text}")
-                elif response.status == 200:
-                    return text
-                else:
-                    raise NonRetriableError(f"Server error: {response.status} {text}")
 
     def _get_headers(self):
         return {"Authorization": f"Bearer {self._api_config['api_key']}"}
@@ -291,7 +297,7 @@ class OpenAIChat(OpenAIBaseRunner):
             request["response_format"] = {"type": "json_object"}
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
 
-        return await self._execute_request(request, fingerprint, priority)
+        return await self._execute_request(request | {"model": self._model_id}, fingerprint, priority)
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
         request_text = request["messages"][-1]["content"]
@@ -325,7 +331,7 @@ class AzureMixIn:
         if not "endpoint" in self._api_config:
             raise ValueError("Azure API needs an endpoint.")
         if not "deployment_id" in self._api_config:
-            raise ValueError("Azure API needs a deployment_id.")
+            warnings.warn(f"Missing deployment_id, using model_id {self._model_id}.")
         if not "api_version" in self._api_config:
             warnings.warn("API Version not given, assuming " "2023-05-15" ".", UserWarning)
             self._api_config["api_version"] = "2023-05-15"
@@ -414,7 +420,7 @@ class OpenAIEmbedding(OpenAIChat):
         if missing:
             fingerprint = serialize_json({"embedding_model_id": self._equivalence_class, self.INPUT_FIELD: text})
             missing_embeddings = await self._execute_request(
-                {self.INPUT_FIELD: [text[i] for i in missing]}, fingerprint, priority
+                {self.INPUT_FIELD: [text[i] for i in missing], "model": self._model_id}, fingerprint, priority
             )
             for i, emb in zip(missing, missing_embeddings.value):
                 embeddings[i] = emb
@@ -438,20 +444,149 @@ class AzureEmbedding(AzureMixIn, OpenAIEmbedding):
     SCENARIO = "embeddings"
 
 
-class DeepInfraEmbedding(BaseRunner):
-    BASE_URL = r"https://api.deepinfra.com/v1/inference/"
-    INPUT_FIELD = "inputs"
-    DEFAULT_CACHE = SqlLiteDict
-
-    def _post_init(self):
-        self._embeddings_cache = self._cache
-        self._cache = None
-
-    def _rest_url(self):
-        return f"{self.BASE_URL}{self._model_id}"
-
-    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes):
-        return LLMResult(json_data["embeddings"], costs=Costs(json_data["input_tokens"]))
+class GeminiChat(RestRunner):
+    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/"
+    SUFFIX = ":generateContent"
 
     def _get_headers(self):
-        return {"Authorization": f"Bearer {self._api_config['api_key']}", "Content-Type": "application/json"}
+        return {"x-goog-api-key": self._api_config["api_key"], "Content-Type": "application/json"}
+
+    def _rest_url(self):
+        return f"{self.BASE_URL}{self._model_id}{self.SUFFIX}"
+
+    async def generate_text(
+        self,
+        prompt: str,
+        max_tokens: int | None = None,
+        randomness: float | None = 0,
+        seed: int = 0,
+        priority: int = 0,
+        system_prompt: str | None = None,
+        history: list[dict] | None = None,
+        json_mode: bool = False,
+    ) -> LLMResult:
+        """Calls the chat endpoint of Gemini
+
+        Args:
+            prompt: The user prompt.
+            max_tokens: The maximum number of tokens to generate. If not set, corresponds to maximum
+            available tokens.
+            randomness: The randomness to use when generating tokens.
+            seed: When using randomness, use this seed for local reproducibility (achieved by caching).
+            priority: The priority of the request (used for throttling).
+
+        Returns:
+            Dictionary with keys "data" (the generated text), "cost" (the number of tokens used),
+            and "retries" (the number of retries).
+        """
+        messages = []
+        if history is not None:
+            messages += history
+        messages += [{"role": "user", "parts": [{"text": prompt}]}]
+
+        request = dict(
+            contents=messages,
+            generationConfig=dict(maxOutputTokens=self._max_context_window or max_tokens, temperature=randomness),
+        )
+        if system_prompt is not None:
+            request["system_instruction"] = {"parts": [{"text": system_prompt}]}
+        if json_mode:
+            request["generationConfig"]["responseMimeType"] = "application/json"
+
+        fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
+
+        return await self._execute_request(request, fingerprint, priority)
+
+    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
+        request_text = request["contents"][-1]["parts"][0]["text"]
+        response = json_data["candidates"][0]["content"]["parts"][0]
+        response_text = response["text"]
+        usage = json_data["usageMetadata"]
+        prompt_logger.debug(f"\n\n\nAPI call:\n{request_text}\n->\n\n{response_text}")
+        return LLMResult(
+            response_text,
+            history=request["contents"] + [response],
+            costs=Costs(usage["promptTokenCount"], usage["candidatesTokenCount"]),
+            request_text=request_text,
+        )
+
+
+class AnthropicChat(RestRunner):
+    BASE_URL = "https://api.anthropic.com/v1/messages"
+    API_VERSION = "2023-06-01"
+
+    def _post_init(self):
+        if "anthropic-version" not in self._api_config:
+            warnings.warn(f"'anthropic-version' not given, assuming '{self.API_VERSION}'.", UserWarning)
+            self._api_config["anthropic-version"] = self.API_VERSION
+        if self._max_context_window is None:
+            warnings.warn("Max context window not given, assuming 4096.", UserWarning)
+            self._max_context_window = 4096
+
+    def _get_headers(self):
+        return {
+            "x-api-key": self._api_config["api_key"],
+            "content-type": "application/json",
+            "anthropic-version": self._api_config["anthropic-version"],
+        }
+
+    def _rest_url(self):
+        return self.BASE_URL
+
+    async def generate_text(
+        self,
+        prompt: str,
+        max_tokens: int | None = None,
+        randomness: float | None = 0,
+        seed: int = 0,
+        priority: int = 0,
+        system_prompt: str | None = None,
+        history: list[dict] | None = None,
+        json_mode: bool = False,
+    ) -> LLMResult:
+        """Calls the chat endpoint of Gemini
+
+        Args:
+            prompt: The user prompt.
+            max_tokens: The maximum number of tokens to generate. If not set, corresponds to maximum
+            available tokens.
+            randomness: The randomness to use when generating tokens.
+            seed: When using randomness, use this seed for local reproducibility (achieved by caching).
+            priority: The priority of the request (used for throttling).
+
+        Returns:
+            Dictionary with keys "data" (the generated text), "cost" (the number of tokens used),
+            and "retries" (the number of retries).
+        """
+        messages = []
+        if history is not None:
+            messages += history
+        messages += [{"role": "user", "content": prompt}]
+
+        request = self._purge_none_values(
+            dict(
+                messages=messages,
+                max_tokens=max_tokens or self._max_context_window,
+                temperature=randomness,
+                system=system_prompt,
+            )
+        )
+        if json_mode:
+            raise NotImplementedError("JSON mode not supported for Anthropic models.")
+
+        fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
+
+        return await self._execute_request(request | {"model": self._model_id}, fingerprint, priority)
+
+    def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
+        request_text = request["messages"][-1]["content"]
+        response = json_data["content"][0]
+        response_text = response["text"]
+        usage = json_data["usage"]
+        prompt_logger.debug(f"\n\n\nAPI call:\n{request_text}\n->\n\n{response_text}")
+        return LLMResult(
+            response_text,
+            history=request["messages"] + [response],
+            costs=Costs(usage["input_tokens"], usage["output_tokens"]),
+            request_text=request_text,
+        )

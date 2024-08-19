@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.2.3"
+version = "0.2.4"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
