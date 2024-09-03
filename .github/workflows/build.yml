@@ -113,14 +113,14 @@ jobs:
 
     steps:
       - name: Download the distribution artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: python-package-distributions
           path: dist/
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Download zipped documentation
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.7
         with:
           name: zipped-documentation
           path: dist/
