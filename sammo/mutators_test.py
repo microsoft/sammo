@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 from unittest.mock import MagicMock
 
+import pybars
 import pytest
 
 from sammo.dataformatters import PlainFormatter
@@ -124,3 +125,116 @@ async def test_mutate():
     result = await mutator.mutate(basic_template(), MagicMock(), runner, random_state=46)
     assert result[0].action == "swap"
     assert result[0].candidate.query(".*content").strip() == "rolled over the street The big ball ."
+
+
+def test_MultiStepRewrite_constructor_raises_exception_for_no_templates():
+    invalid_template = 1
+    with pytest.raises(ValueError):
+        MultiStepRewrite("descriptor")
+
+
+def test_MultiStepRewrite_constructor_raises_exception_for_invalid_template():
+    invalid_template = 1
+    with pytest.raises(TypeError):
+        MultiStepRewrite("descriptor", invalid_template)
+
+
+def test_MultiStepRewrite_constructor_resolves_str_templates():
+    template1 = "1 {{{content}}}"
+    template2 = "2 {{{content}}}"
+    mutator = MultiStepRewrite("descriptor", template1, template2)
+    assert len(mutator._templates) == 2
+    assert mutator._templates[0]({"content": "test"}) == "1 test"
+    assert mutator._templates[1]({"content": "test"}) == "2 test"
+
+
+def test_MultiStepRewrite_constructor_resolves_path_templates(tmp_path):
+    p1 = tmp_path / "template1.txt"
+    p1.write_text("path 1 {{{content}}}")
+
+    p2 = tmp_path / "template2.txt"
+    p2.write_text("path 2 {{{content}}}")
+
+    mutator = MultiStepRewrite("descriptor", p1, p2)
+    assert len(mutator._templates) == 2
+    assert mutator._templates[0]({"content": "test"}) == "path 1 test"
+    assert mutator._templates[1]({"content": "test"}) == "path 2 test"
+
+
+def test_MultiStepRewrite_constructor_resolves_file_templates(tmp_path):
+    p1 = tmp_path / "template1.txt"
+    p1.write_text("file 1 {{{content}}}")
+
+    p2 = tmp_path / "template2.txt"
+    p2.write_text("file 2 {{{content}}}")
+
+    with p1.open("r") as f1:
+        with p2.open("r") as f2:
+            mutator = MultiStepRewrite("descriptor", f1, f2)
+            assert len(mutator._templates) == 2
+            assert mutator._templates[0]({"content": "test"}) == "file 1 test"
+            assert mutator._templates[1]({"content": "test"}) == "file 2 test"
+
+
+@pytest.mark.asyncio
+async def test_MultiStepRewrite_basic_mutation():
+    template1 = "Content: {{{content}}}\nParam1: {{{param1}}}"
+    template2 = "{{{last_prompt}}}\n{{{last_result}}}\nParam2: {{{param2}}}"
+    runner = MockedRunner(["m1result1", "m1result2", "m2result1", "m2result2"])
+    mutator = MultiStepRewrite({"name": "test"}, template1, template2, param1="p1", param2="p2")
+    result = await mutator.mutate(basic_template(), MagicMock(), runner, n_mutations=2, random_state=42)
+    assert len(result) == 2
+    assert result[0].candidate.query({"name": "test", "_child": "content"}) == "m1result2"
+    assert runner.prompt_log[0] == ("Content: The big ball rolled over the street.\n" "Param1: p1")
+    assert runner.prompt_log[1] == (
+        "Content: The big ball rolled over the street.\n" "Param1: p1\n" "m1result1\n" "Param2: p2"
+    )
+
+    assert result[1].candidate.query({"name": "test", "_child": "content"}) == "m2result2"
+    assert runner.prompt_log[2] == ("Content: The big ball rolled over the street.\n" "Param1: p1")
+    assert runner.prompt_log[3] == (
+        "Content: The big ball rolled over the street.\n" "Param1: p1\n" "m2result1\n" "Param2: p2"
+    )
+
+
+@pytest.mark.asyncio
+async def test_MultiStepRewrite_duplicate_mutation():
+    template1 = "Content: {{{content}}}\nParam1: {{{param1}}}"
+    template2 = "{{{last_prompt}}}\n{{{last_result}}}\nParam2: {{{param2}}}"
+    runner = MockedRunner(["m1result1", "m1result2"])
+    mutator = MultiStepRewrite({"name": "test"}, template1, template2, param1="p1", param2="p2")
+    result = await mutator.mutate(duplicate_template(), MagicMock(), runner, n_mutations=1, random_state=42)
+    assert len(result) == 1
+    assert result[0].candidate.query({"name": "test", "_child": "content"}, max_matches=None) == [
+        "m1result2",
+        "m1result2",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_MultiStepRewrite_with_helper():
+    def _my_helper(this, x):
+        return pybars.strlist(["_", x, "_"])
+
+    helpers = {"my_helper": _my_helper}
+
+    template = "Content: {{{content}}}\nParam1: {{{my_helper param1}}}"
+    runner = MockedRunner(["result"])
+    mutator = MultiStepRewrite({"name": "test"}, template, template_helpers=helpers, param1="p1")
+    result = await mutator.mutate(basic_template(), MagicMock(), runner, n_mutations=1, random_state=42)
+    assert len(result) == 1
+    assert result[0].candidate.query({"name": "test", "_child": "content"}) == "result"
+    assert runner.prompt_log[0] == ("Content: The big ball rolled over the street.\n" "Param1: _p1_")
+
+
+@pytest.mark.asyncio
+async def test_MultiStepRewrite_with_partial():
+    partials = {"a": "Partial got {{{param1}}}"}
+
+    template = "Content: {{{content}}}\nParam1: {{{param1}}}\n{{> a}}"
+    runner = MockedRunner(["result"])
+    mutator = MultiStepRewrite({"name": "test"}, template, template_partials=partials, param1="p1")
+    result = await mutator.mutate(basic_template(), MagicMock(), runner, n_mutations=1, random_state=42)
+    assert len(result) == 1
+    assert result[0].candidate.query({"name": "test", "_child": "content"}) == "result"
+    assert runner.prompt_log[0] == ("Content: The big ball rolled over the street.\n" "Param1: p1\n" "Partial got p1")
