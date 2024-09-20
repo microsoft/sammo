@@ -2,17 +2,18 @@
 # Licensed under the MIT License.
 from __future__ import annotations
 import abc
-import asyncio
-import quattro
 import collections
 import logging
+from pathlib import Path
 import random
 import re
 import textwrap
 
 from beartype.typing import Callable, Literal, Any
 import numpy as np
+import pybars
 import pyglove as pg
+import quattro
 import spacy
 
 import sammo.base
@@ -899,3 +900,114 @@ class StopwordsCompressor(Component):
             return [self(v) for v in x]
         else:
             return x
+
+
+class MultiStepRewrite(Mutator):
+    """A mutator that applies a sequence of templated text generations to a content fragment.
+
+    This mutator can be used in a multistep process that threads the previous prompt and result into
+    the next step. This allows for a large context to be accumulated before a final text generation is
+    made to output the new content fragment.
+
+    For example, this class can be used to define a mutator that generates notes about a set of instructions (step 1),
+    adapts the notes to a new instruction style (step 2) and finally generates a rewritten version of the
+    instructions (step 3).
+
+    The caller can supply additional variables to the templates via the template_vars accumulation keyword argument to
+    __init__. These additional variables are passed to all templates. The special variable 'content', containing the
+    input content fragment, is also available to all templates. All templates after the first one receive the
+    special variables 'last_prompt' and 'last_result', which contain the rendered prompt and generation result
+    from the previous template in the chain. By using 'last_prompt' and 'last_result', you can accumulate
+    a large context for the final step.
+    """
+
+    def __init__(
+        self,
+        path_descriptor: str | dict,
+        *templates,
+        action: str | None = None,
+        template_helpers: dict | None = None,
+        template_partials: dict | None = None,
+        **template_vars,
+    ):
+        """Initializes a MultiStepRewrite instance.
+
+        Args:
+            path_descriptor: a descriptor that identifies the node or nodes to be mutated
+            *templates: one or more Handlebars-style templates. These can be provided as
+                str, Path or file-like objects. Path.read_text() or file.read() will be used
+                to acquire the template contents. The caller retains ownership of any file-like
+                object passed to this method and should ensure that it is closed appropriately
+            action: optional name for this mutator. This string will be used to create the mutation candidate and will
+                appear in the optimizer report. If no action is specified, the class name will be used
+                instead
+            template_helpers: optional pybars template helpers that will be passed to the compiled
+                template instance at render time
+            template_partials: optional pybars template partials. Each key in the dict should be the name of the
+                partial (str) and the value should be a template source (str, Path or file-like). Template resolution
+                and compilation will happen on the values as is done for the *templates
+            **template_vars: keyword arguments are interpreted as additional template variables
+                that will be made available to each template
+        """
+        if not templates:
+            raise ValueError("Must supply at least one template")
+
+        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
+        compiler = pybars.Compiler()
+        self._templates = [MultiStepRewrite.resolve_template(compiler, t) for t in templates]
+        self._template_helpers = template_helpers
+        if template_partials:
+            self._template_partials = {
+                name: MultiStepRewrite.resolve_template(compiler, t) for name, t in template_partials.items()
+            }
+        else:
+            self._template_partials = None
+        self._common_template_vars = template_vars
+        self._action = action or self.__class__.__name__
+
+    @staticmethod
+    def resolve_template(compiler: pybars.Compiler, template_source: Any) -> Callable[[dict], str]:
+        """Map a str, Path or file-like object to a compiled template function."""
+        if isinstance(template_source, str):
+            template_text = template_source
+        elif isinstance(template_source, Path):
+            template_text = template_source.read_text()
+        elif hasattr(template_source, "read"):  # treat as file-like (assume text mode)
+            template_text = template_source.read()
+        else:
+            raise TypeError(
+                f"template must be one of str, Path or File-like opened in text mode. Received {type(template_source)=}"
+            )
+        return compiler.compile(template_text)
+
+    def applicable(self, candidate: Output):
+        return candidate.query(self._path_descriptor) is not None
+
+    async def mutate(
+        self,
+        candidate: Output,
+        data: DataTable,
+        runner: sammo.base.Runner,
+        n_mutations: int = 1,
+        random_state: int = 42,
+    ) -> list[MutatedCandidate]:
+        # get the content to be rewritten
+        segments = candidate.query(self._path_descriptor, return_path=True, max_matches=None)
+        segment_content = segments[0][1]
+        segment_paths = [s[0] + ".content" for s in segments]
+
+        mutated_candidates = []
+
+        for _ in range(n_mutations):
+            template_vars = {**self._common_template_vars, **{"content": segment_content.static_text()}}
+            for template in self._templates:
+                prompt = template(template_vars, helpers=self._template_helpers, partials=self._template_partials)
+                result_text = (await runner.generate_text(prompt)).value
+                template_vars |= {"last_prompt": prompt, "last_result": result_text}
+
+            mutated_candidate = MutatedCandidate(
+                self._action, pg.clone(candidate, override={p: result_text for p in segment_paths})
+            )
+            mutated_candidates.append(mutated_candidate)
+
+        return mutated_candidates
