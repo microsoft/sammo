@@ -1,14 +1,16 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-
+from aiohttp import ClientConnectorError
+from aiohttp.client_reqrep import ConnectionKey
 from quattro import TaskGroup
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding
+from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding, RetriableError
 from sammo.base import Costs
 from sammo.store import InMemoryDict
+
 
 """Testing the Costs class"""
 
@@ -53,6 +55,17 @@ def basic():
     )
     mock.return_value.__aenter__.return_value = coro
     return mock
+
+
+@pytest.fixture
+def connector_error_in_post():
+    session_mock = MagicMock()
+    post_mock = MagicMock()
+    post_mock.post.side_effect = ClientConnectorError(
+        ConnectionKey("example.com", 123, False, False, None, None, None), OSError("mock error")
+    )
+    session_mock.return_value.__aenter__.return_value = post_mock
+    return session_mock
 
 
 @pytest.fixture
@@ -130,3 +143,13 @@ async def test_cached_embeddings(basic_embedding):
     assert basic_embedding.call_count == 1
 
     assert result.value == [[0.1, 0.2], [0.3, 0.4]]
+
+
+@pytest.mark.asyncio
+async def test_retry_connector_errors(connector_error_in_post):
+    runner = OpenAIChat(model_id="gpt-4", api_config={"api_key": "test"}, rate_limit=10, cache=InMemoryDict())
+    runner._get_session = connector_error_in_post
+    with pytest.raises(RetriableError) as excinfo:
+        await runner.generate_text(prompt="test prompt")
+    assert "Client/server connection error" in str(excinfo)
+    assert "example.com" in str(excinfo)

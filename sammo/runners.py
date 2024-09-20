@@ -15,6 +15,7 @@ import pathlib
 from contextlib import asynccontextmanager
 
 import aiohttp
+from aiohttp.client_exceptions import ClientConnectorError
 import orjson
 from beartype import beartype
 from beartype.typing import Literal, Union
@@ -222,19 +223,29 @@ class BaseRunner(Runner):
 
 class RestRunner(BaseRunner):
     async def _call_backend(self, request: dict) -> dict:
-        async with self._get_session() as session:
-            async with session.post(
-                self._rest_url(),
-                json=request,
-                headers=self._get_headers(),
-            ) as response:
-                text = await response.json()
-                if response.status in [429, 500, 503, 529]:
-                    raise RetriableError(f"Server error: {response.status} {text}")
-                elif response.status == 200:
-                    return text
-                else:
-                    raise NonRetriableError(f"Server error: {response.status} {text}")
+        try:
+            async with self._get_session() as session:
+                async with session.post(
+                    self._rest_url(),
+                    json=request,
+                    headers=self._get_headers(),
+                ) as response:
+                    text = await response.json()
+                    if response.status in [429, 500, 503, 529]:
+                        raise RetriableError(f"Server error: {response.status} {text}")
+                    elif response.status == 200:
+                        return text
+                    else:
+                        raise NonRetriableError(f"Server error: {response.status} {text}")
+        except ClientConnectorError as exc:
+            # ClientConnectorError is raised when there is a (possibly) transient transport-layer connection issue.
+            # We handle this error by waiting a short period of time (to allow the TCP state machine to reach a
+            # consistent state), then raising a RetriableError so that the request is retried. We wrap the
+            # session rather than the POST call so that a new connection is created rather than re-using one from the
+            # underlying pool.
+            # see https://github.com/microsoft/sammo/issues/49
+            await asyncio.sleep(0.25)
+            raise RetriableError(f"Client/server connection error: {exc!s}")
 
 
 class OpenAIBaseRunner(RestRunner):
