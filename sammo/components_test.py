@@ -14,6 +14,12 @@ async def test_union():
 
 
 @pytest.mark.asyncio
+async def test_union_run():
+    res = await Union("a", "b", "c").arun(None)
+    assert [r.value for r in res] == ["a", "b", "c"]
+
+
+@pytest.mark.asyncio
 async def test_for_each():
     res = await ForEach("x", Union("a", "b", "c"), Template(".{{x}}"))(None, dict())
     assert res.value == [".a", ".b", ".c"]

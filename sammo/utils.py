@@ -181,11 +181,7 @@ def sync(f: collections.abc.Coroutine):
 
 def is_interactive() -> bool:
     """Check if the code is running in an interactive shell."""
-    try:
-        get_ipython()
-        return True
-    except:
-        return False
+    return hasattr(sys, "ps1")
 
 
 class IFrameRenderer:
