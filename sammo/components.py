@@ -77,7 +77,7 @@ class GenerateText(Component):
         self.dependencies = [self._child, self._history] if self._history else [self._child]
         self._override_runner = runner
 
-        if seed > 0 and randomness == 0:
+        if seed != 0 and randomness == 0:
             warnings.warn("Seed is being used but randomness is 0.")
 
     async def _call(
@@ -136,11 +136,36 @@ class Union(Component):
             raise ValueError("Must be given at least one component.")
 
         super().__init__(children, name)
-        self.dependencies = list(children)
+        self.dependencies = self._child
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
         results = [await c(runner, context, dynamic_context) for c in self._child]
         return NonEmptyResult(self._flatten(results), parent=results, op=self)
+
+    def run(
+        self,
+        runner: Runner,
+        progress_callback: TUnion[Callable, bool] = True,
+        priority: int = 0,
+    ):
+        return utils.sync(self.arun(runner, progress_callback, priority))
+
+    async def arun(
+        self,
+        runner: Runner,
+        progress_callback: TUnion[Callable, bool] = True,
+        priority: int = 0,
+    ):
+        if progress_callback is False:
+            progress_callback = lambda: None
+        elif progress_callback is True:
+            colbar = CompactProgressBars()
+            progress_callback = colbar.get("tasks", total=len(self.dependencies)).update
+
+        jobs = [Minibatch(c, None, runner, progress_callback) for c in self.dependencies]
+        scheduler = Scheduler(runner, jobs, base_priority=priority)
+        await scheduler.arun()
+        return [await job() for job in jobs]
 
 
 class JoinStrings(Union):

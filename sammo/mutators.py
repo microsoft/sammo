@@ -438,9 +438,9 @@ class APO(Mutator):
         minibatch_pred = await candidate.arun(runner, minibatch, progress_callback=False)
         wrong_examples = self.objective(minibatch, minibatch_pred).mistakes
 
-        # if no errors are found, just return current candidate
+        # if no errors are found, just return current empty list
         if len(wrong_examples) == 0:
-            return [candidate]
+            return []
 
         # choose random examples from the minibatch
         sampled_errors_idx = rng.sample(sorted(wrong_examples), min(self._n_sampled_errors, len(wrong_examples)))

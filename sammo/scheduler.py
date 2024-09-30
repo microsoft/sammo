@@ -9,7 +9,7 @@ import webbrowser
 from graphlib import TopologicalSorter
 import logging
 
-from sammo.utils import IFrameRenderer, GRAPH_TEMPLATE
+from sammo.utils import HtmlRenderer, GRAPH_TEMPLATE
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +76,8 @@ class Scheduler:
         elements = {"nodes": nodes, "edges": edges}
         return GRAPH_TEMPLATE.replace("ELEMENTS", json.dumps(elements, ensure_ascii=False))
 
-    def display(self):
-        return IFrameRenderer(self._to_html())
+    def display(self, backend="auto"):
+        return HtmlRenderer(self._to_html()).render(backend)
 
     async def run_node(self, node):
         await node.job(self._runner, node.compute_context, None)

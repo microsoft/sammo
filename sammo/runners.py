@@ -49,6 +49,13 @@ class MockedRunner(Runner):
         self.prompt_log.append(prompt)
         if isinstance(self._ret_vals, list):
             ret_val = self._ret_vals[self._n_calls % len(self._ret_vals)]
+        elif isinstance(self._ret_vals, dict):
+            ret_val = "No match found."
+            for k, v in self._ret_vals.items():
+                match = re.search(k, prompt, re.DOTALL)
+                if match is not None:
+                    ret_val = v
+                    break
         else:
             ret_val = self._ret_vals
         return LLMResult(ret_val, costs=Costs(), request_text=prompt)
