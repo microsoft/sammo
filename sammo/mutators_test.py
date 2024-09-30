@@ -119,10 +119,11 @@ async def test_apo(n_data=5, num_gradients=2):
     mutator = APO({"name": "test", "_child": "content"}, None, num_gradients=2, steps_per_gradient=1, num_rewrites=1)
     mutator.objective = MagicMock()
     mutator.objective.return_value = MagicMock(mistakes=list(range(n_data)))
-    result = await mutator.mutate(short_template(), datatable, runner, n_mutations=2, random_state=42)
-    assert result[0].candidate.query({"name": "test", "_child": "content"}) == "Improved Prompt 0"
-    assert result[1].candidate.query({"name": "test", "_child": "content"}) == "<START>Improved Prompt 0</START>"
-    assert len(result) == 2
+    result = await mutator.mutate(short_template(), datatable, runner, n_mutations=3, random_state=42)
+
+    assert result[0].candidate.query({"name": "test", "_child": "content"}) == "Improved 2"
+    assert result[2].candidate.query({"name": "test", "_child": "content"}) == "Rewritten Improved 1"
+    assert len(result) == 3
 
 
 @pytest.mark.asyncio
