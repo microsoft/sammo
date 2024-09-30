@@ -3,9 +3,11 @@
 """Small number of utility functions that are used across SAMMO."""
 import asyncio
 import collections
+import tempfile
 import time
 import pathlib
 import sys
+import webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from html import escape
 
@@ -87,6 +89,7 @@ GRAPH_TEMPLATE = """
     onDragEnd: resizeCyto
   });
   const DATA = ELEMENTS;
+
   var cy = cytoscape({
     container: document.getElementById('graph'),
     style: cytoscape.stylesheet().selector('node').style({
@@ -113,6 +116,11 @@ GRAPH_TEMPLATE = """
     cy.resize();
     cy.fit();
   }
+
+  function escapeHTML(str){
+    return new Option(str).innerHTML;
+  }
+
   window.addEventListener('resize', resizeCyto);
   cy.on('tap', 'node', function(evt) {
     const node = evt.target;
@@ -124,10 +132,10 @@ GRAPH_TEMPLATE = """
         info.innerHTML = "<div>Node has no metadata.</div>";
     } else if (typeof details === 'object' && !Array.isArray(details)) {
         Object.entries(details).forEach(([key, value]) => {
-            info.innerHTML += `<div>${key}</div><pre>${value}</pre>`;
+            info.innerHTML += `<div>${escapeHTML(key)}</div><pre>${escapeHTML(value)}</pre>`;
         });
     } else {
-        info.innerHTML = `<pre>${details}</pre>`;
+        info.innerHTML = `<pre>${escapeHTML(details)}</pre>`;
     }
   });
   </script>
@@ -184,8 +192,19 @@ def is_interactive() -> bool:
     return hasattr(sys, "ps1")
 
 
-class IFrameRenderer:
-    """Render HTML in an IFrame for Jupyter Lab and Notebook"""
+def is_jupyter() -> bool:
+    """Check if code is running in jupyter lab or notebook."""
+    try:
+        if get_ipython().__class__.__name__ == "ZMQInteractiveShell":
+            return True
+        else:
+            return False
+    except NameError:
+        return False
+
+
+class HtmlRenderer:
+    """Render HTML in an IFrame for Jupyter or as temporary file."""
 
     def __init__(self, raw_html, width="100%", height="300px"):
         self.raw_html = raw_html
@@ -198,6 +217,16 @@ class IFrameRenderer:
             "allowfullscreen" style="border:1px solid #e0e0e0; box-sizing: border-box;">
             </iframe>"""
         return iframe
+
+    def render(self, backend="auto"):
+        if backend == "auto":
+            backend = "jupyter" if is_jupyter() else "file"
+        if backend == "jupyter":
+            return self
+        else:
+            with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8", suffix=".html") as f:
+                f.write(self.raw_html)
+                webbrowser.open("file://" + f.name, new=2, autoraise=True)
 
 
 def get_main_script_path() -> pathlib.Path:

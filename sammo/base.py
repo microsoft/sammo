@@ -5,14 +5,16 @@ import abc
 import copy
 import json
 import re
+import webbrowser
 
 from beartype.typing import Callable, Any
 from frozendict import frozendict
 import pyglove as pg
 import pybars
+import tempfile
 from pyglove import Symbolic
 from tabulate import tabulate
-from sammo.utils import IFrameRenderer, GRAPH_TEMPLATE
+from sammo.utils import HtmlRenderer, GRAPH_TEMPLATE
 
 # monkey-patch pybars to disable HTML escaping
 pybars.Compiler._builder.add_escaped_expand = pybars.Compiler._builder.add_expand
@@ -132,7 +134,7 @@ class Result:
         else:
             return [self.value]
 
-    def plot_call_trace(self):
+    def plot_call_trace(self, backend="auto"):
         queue = [self]
         nodes = list()
         edges = list()
@@ -150,11 +152,14 @@ class Result:
             }
             nodes.append({"data": node_data})
             if isinstance(node, Result):
-                queue.extend(node.parents)
                 for parent in node.parents:
+                    if not isinstance(parent, Result):
+                        continue
+                    queue.append(parent)
                     edges.append({"data": {"target": id(node), "source": id(parent)}})
         graph = json.dumps({"nodes": nodes, "edges": edges}, ensure_ascii=False)
-        return IFrameRenderer(GRAPH_TEMPLATE.replace("ELEMENTS", graph))
+        html = GRAPH_TEMPLATE.replace("ELEMENTS", graph)
+        return HtmlRenderer(html).render(backend)
 
 
 class NonEmptyResult(Result):
@@ -380,7 +385,7 @@ class Component:
         pg.traverse(self, t)
         return "\n".join(out)
 
-    def plot_program(self):
+    def plot_program(self, backend="auto"):
         queue = [self]
         nodes = list()
         edges = list()
@@ -418,7 +423,8 @@ class Component:
         graph = json.dumps(
             {"nodes": nodes, "edges": edges, "node-color": "white", "node-border": 1}, ensure_ascii=False
         )
-        return IFrameRenderer(GRAPH_TEMPLATE.replace("ELEMENTS", graph))
+        html = GRAPH_TEMPLATE.replace("ELEMENTS", graph)
+        return HtmlRenderer(html).render(backend)
 
     @abc.abstractmethod
     async def _call(
