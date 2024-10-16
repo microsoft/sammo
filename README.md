@@ -6,7 +6,8 @@
 
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
-![Overview](https://microsoft.github.io/sammo/_images/overview.png)
+## News
+- Oct 15, 2024: SAMMO now supports structured outputs!
 
 ## How to Get Started
 Go to the [user guide](https://microsoft.github.io/sammo/) for examples, how-tos, and API reference.
@@ -37,8 +38,9 @@ cd sammo
 # launch jupyter notebook and open tutorials directory
 jupyter notebook --notebook-dir docs/tutorials
 ```
-
 ## Use Cases
+![Overview](https://microsoft.github.io/sammo/_images/overview.png)
+
 SAMMO is designed to support
 - **Efficient data labeling**: Supports minibatching by packing and parsing multiple datapoints into a single prompt.
 - **Prompt prototyping and engineering**: Re-usable components and prompt structures to quickly build and test new prompts.
@@ -50,6 +52,7 @@ and rate-limiting out-of-the-box so you can run many queries in parallel and at 
 It is less useful if you want to build
 - Interactive, agent-based LLM applications (→ check out [AutoGen](https://microsoft.github.io/autogen/))
 - Interactive, production-ready LLM applications (→ check out [LangChain](https://www.langchain.com/))
+
 
 
 ## Example
