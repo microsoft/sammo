@@ -83,7 +83,7 @@ jobs:
           zip -r ../../dist/sammo-docs-$DOCS_VERSION.zip .
           popd
       - name: Store the documentation artifacts for GitHub Pages
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         if: matrix.os == 'ubuntu-latest'
         with:
           path: _build_docs/_build/html
