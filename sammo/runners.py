@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import pathlib
+import pyglove as pg
 from contextlib import asynccontextmanager
 
 import aiohttp
@@ -36,6 +37,82 @@ class RetriableError(Exception):
 
 class NonRetriableError(Exception):
     pass
+
+
+@pg.symbolize(repr=False)
+class JsonSchema:
+    __slots__ = "schema"
+
+    def __init__(self, raw_schema):
+        self.schema = raw_schema
+
+    def __repr__(self):
+        return json.dumps(self.schema, indent=2)
+
+    @classmethod
+    def _guess_schema(cls, data, top_level=False, desc=None, convention=None):
+        if top_level and not isinstance(data, dict):
+            raise TypeError(f"Top level object must be dict.")
+
+        def _name(x):
+            return x[0] if isinstance(x, tuple) else x
+
+        def _desc(x):
+            return x[1] if isinstance(x, tuple) else None
+
+        type_map = {int: "integer", float: "number", str: "string", bool: "boolean"}
+        desc = {"description": desc} if desc is not None else {}
+        extra = {"additionalProperties": False} if convention == "openai" else {}
+        if isinstance(data, dict):
+            return (
+                {
+                    "type": "object",
+                    "properties": {
+                        _name(key): cls._guess_schema(value, desc=_desc(key), convention=convention)
+                        for key, value in data.items()
+                    },
+                    "required": [_name(x) for x in data.keys()],
+                }
+                | extra
+                | desc
+            )
+        elif isinstance(data, list):
+            return {"type": "array", "items": cls._guess_schema(data[0], convention=convention)} | desc
+        elif isinstance(data, set):
+            first_item = list(data)[0]
+            if all(isinstance(item, type(first_item)) for item in data) and type(first_item) in type_map:
+                return {"type": type_map[type(first_item)], "enum": list(data)} | desc
+            elif all(type(item) in type_map for item in data):
+                return {"type": sorted(list({type_map[type(item)] for item in data}))}
+            else:
+                return {"anyOf": [cls._guess_schema(item, convention=convention) for item in data]} | desc
+        elif isinstance(data, (str, int, float, bool)):
+            return {"type": type_map[type(data)]} | desc
+        else:
+            raise TypeError(f"Cannot translate {data} to schema")
+
+    @classmethod
+    def guess_schema(cls, data, convention="openai"):
+        """
+        Tries to guess the JSON schema from a given example.
+
+        Rules:
+        - Primitive types (`int`, `float`, `str`, `bool`) are converted to their corresponding JSON schema types
+        - Python `dict` is converted to JSON schema `object`.
+        - Python `list` is converted to JSON schema `array`.
+        - Python `set`. If all elements of the set are of the same type, it will
+          be converted to an `enum` type containing all unique values of the set. If the set contains multiple
+          primitive types, it will be mapped to a union datatype. Otherwise, it will be mapped to an `anyOf` clause.
+
+        :param data: The input data to generate the schema for.
+        :param convention: Include default settings for OpenAI vs. other providers.
+
+        :return: A dictionary representing the JSON schema corresponding to the input data.
+
+        :raises TypeError: If the top-level data is not a dictionary or if the data type cannot be translated into
+                           a valid JSON schema.
+        """
+        return cls(cls._guess_schema(data, top_level=True, convention=convention))
 
 
 class MockedRunner(Runner):
@@ -227,6 +304,10 @@ class BaseRunner(Runner):
     def _purge_none_values(d: dict):
         return {k: v for k, v in d.items() if v is not None}
 
+    @classmethod
+    def guess_json_schema(cls, data: dict) -> JsonSchema:
+        return JsonSchema.guess_schema(data, convention=None)
+
 
 class RestRunner(BaseRunner):
     async def _call_backend(self, request: dict) -> dict:
@@ -268,6 +349,10 @@ class OpenAIBaseRunner(RestRunner):
     def _get_headers(self):
         return {"Authorization": f"Bearer {self._api_config['api_key']}"}
 
+    @classmethod
+    def guess_json_schema(cls, data: dict) -> JsonSchema:
+        return JsonSchema.guess_schema(data, convention="openai")
+
 
 class OpenAIChat(OpenAIBaseRunner):
     BASE_URL = "https://api.openai.com/v1"
@@ -282,7 +367,7 @@ class OpenAIChat(OpenAIBaseRunner):
         priority: int = 0,
         system_prompt: str | None = None,
         history: list[dict] | None = None,
-        json_mode: bool = False,
+        json_mode: bool | JsonSchema = False,
     ) -> LLMResult:
         """Calls the chat endpoint of the OAI model.
 
@@ -293,7 +378,7 @@ class OpenAIChat(OpenAIBaseRunner):
             randomness: The randomness to use when generating tokens.
             seed: When using randomness, use this seed for local reproducibility (achieved by caching).
             priority: The priority of the request (used for throttling).
-
+            json_mode: If true, the output will be some valid JSON object. If a JSON schema, it will use it.
         Returns:
             Dictionary with keys "data" (the generated text), "cost" (the number of tokens used),
             and "retries" (the number of retries).
@@ -311,8 +396,13 @@ class OpenAIChat(OpenAIBaseRunner):
         messages += [{"role": "user", "content": revised_prompt}]
 
         request = dict(messages=messages, max_tokens=self._max_context_window or max_tokens, temperature=randomness)
-        if json_mode:
+        if json_mode is True:
             request["response_format"] = {"type": "json_object"}
+        elif isinstance(json_mode, JsonSchema):
+            request["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"strict": True, "name": "output", "schema": json_mode.schema},
+            }
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
 
         return await self._execute_request(request | {"model": self._model_id}, fingerprint, priority)
@@ -331,7 +421,7 @@ class OpenAIChat(OpenAIBaseRunner):
         return prompt
 
     @staticmethod
-    def _extract_costs(json_data: dict) -> dict:
+    def _extract_costs(json_data: dict) -> Costs:
         return Costs(
             input_costs=json_data["usage"].get("prompt_tokens", 0),
             output_costs=json_data["usage"].get("completion_tokens", 0),
@@ -481,7 +571,7 @@ class GeminiChat(RestRunner):
         priority: int = 0,
         system_prompt: str | None = None,
         history: list[dict] | None = None,
-        json_mode: bool = False,
+        json_mode: bool | JsonSchema = False,
     ) -> LLMResult:
         """Calls the chat endpoint of Gemini
 
@@ -508,9 +598,11 @@ class GeminiChat(RestRunner):
         )
         if system_prompt is not None:
             request["system_instruction"] = {"parts": [{"text": system_prompt}]}
+
         if json_mode:
             request["generationConfig"]["responseMimeType"] = "application/json"
-
+        if isinstance(json_mode, JsonSchema):
+            request["generationConfig"]["responseSchema"] = json_mode.schema
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
 
         return await self._execute_request(request, fingerprint, priority)
@@ -560,7 +652,7 @@ class AnthropicChat(RestRunner):
         priority: int = 0,
         system_prompt: str | None = None,
         history: list[dict] | None = None,
-        json_mode: bool = False,
+        json_mode: bool | JsonSchema = False,
     ) -> LLMResult:
         """Calls the chat endpoint of Gemini
 
@@ -589,8 +681,13 @@ class AnthropicChat(RestRunner):
                 system=system_prompt,
             )
         )
-        if json_mode:
+        if json_mode is True:
             raise NotImplementedError("JSON mode not supported for Anthropic models.")
+        if isinstance(json_mode, JsonSchema):
+            request["tool_choice"] = {"type": "tool", "name": "output"}
+            request["tools"] = [
+                {"name": "output", "description": "Put your answer here", "input_schema": json_mode.schema}
+            ]
 
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
 
@@ -598,8 +695,11 @@ class AnthropicChat(RestRunner):
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
         request_text = request["messages"][-1]["content"]
-        response = json_data["content"][0]
-        response_text = response["text"]
+        response = json_data["content"][-1]
+        if response["type"] == "tool_use":
+            response_text = response["input"]
+        else:
+            response_text = response["text"]
         usage = json_data["usage"]
         prompt_logger.debug(f"\n\n\nAPI call:\n{request_text}\n->\n\n{response_text}")
         return LLMResult(

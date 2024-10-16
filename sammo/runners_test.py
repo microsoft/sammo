@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding, RetriableError
+from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding, RetriableError, JsonSchema
 from sammo.base import Costs
 from sammo.store import InMemoryDict
 
@@ -153,3 +153,82 @@ async def test_retry_connector_errors(connector_error_in_post):
         await runner.generate_text(prompt="test prompt")
     assert "Client/server connection error" in str(excinfo)
     assert "example.com" in str(excinfo)
+
+
+def test_schema_simple_dict():
+    data = {"name": "John", "age": 30, "employed": True}
+    expected = {
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "age": {"type": "integer"}, "employed": {"type": "boolean"}},
+        "required": ["name", "age", "employed"],
+        "additionalProperties": False,
+    }
+    assert JsonSchema.guess_schema(data).schema == expected
+
+
+def test_schema_nested_dict():
+    data = {"person": {"name": "Alice", "age": 25}}
+    expected = {
+        "type": "object",
+        "properties": {
+            "person": {
+                "type": "object",
+                "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
+                "required": ["name", "age"],
+                "additionalProperties": False,
+            }
+        },
+        "required": ["person"],
+        "additionalProperties": False,
+    }
+    assert JsonSchema.guess_schema(data).schema == expected
+
+
+def test_infer_schema_empty_dict():
+    data = {}
+    expected = {"type": "object", "properties": {}, "required": [], "additionalProperties": False}
+    assert JsonSchema.guess_schema(data).schema == expected
+
+
+def test_infer_schema_list_of_integers():
+    data = [1, 2, 3]
+    expected = {"type": "array", "items": {"type": "integer"}}
+    assert JsonSchema._guess_schema(data, top_level=False) == expected
+
+
+def test_infer_schema_empty_list():
+    data = []
+    with pytest.raises(IndexError):
+        JsonSchema._guess_schema(data, top_level=False)
+
+
+def test_infer_schema_set_of_strings():
+    data = {"apple", "banana", "cherry"}
+    expected = {"type": "string", "enum": list(data)}
+    assert JsonSchema._guess_schema(data, top_level=False) == expected
+
+
+def test_infer_schema_mixed_type_set():
+    data = {1, "two", 3.0}
+    expected = {"type": ["integer", "number", "string"]}
+    assert JsonSchema._guess_schema(data, top_level=False) == expected
+
+
+def test_infer_schema_dict_with_description():
+    data = {("name", "The user's name"): "Alice", ("age", "The user's age"): 30}
+    expected = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string", "description": "The user's name"},
+            "age": {"type": "integer", "description": "The user's age"},
+        },
+        "required": ["name", "age"],
+        "additionalProperties": False,
+    }
+    assert JsonSchema.guess_schema(data).schema == expected
+
+
+def test_infer_schema_top_level_type_error():
+    data = "not a dict"
+    with pytest.raises(TypeError):
+        JsonSchema.guess_schema(data)
