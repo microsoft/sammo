@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding, RetriableError, JsonSchema
+from sammo.runners import BaseRunner, OpenAIChat, OpenAIEmbedding, RetriableError, JsonSchema, AzureEmbedding
 from sammo.base import Costs
 from sammo.store import InMemoryDict
 
@@ -164,6 +164,14 @@ def test_schema_simple_dict():
         "additionalProperties": False,
     }
     assert JsonSchema.guess_schema(data).schema == expected
+
+
+def test_instantiate_azure():
+    test = AzureEmbedding(
+        model_id="dummy",
+        api_config={"api_key": "test", "endpoint": "test", "deployment_id": "sth", "api_version": "2023-05-15"},
+    )
+    assert hasattr(test, "_embeddings_cache")
 
 
 def test_schema_nested_dict():

@@ -436,6 +436,7 @@ class AzureMixIn:
     """
 
     def _post_init(self):
+        super()._post_init()
         if not "endpoint" in self._api_config:
             raise ValueError("Azure API needs an endpoint.")
         if not "deployment_id" in self._api_config:
