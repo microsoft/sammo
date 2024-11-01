@@ -6,7 +6,8 @@
 
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
-## News
+## 🎉 News
+- Nov 1, 2024: Use CSS selectors to query and modify prompt programs!
 - Oct 15, 2024: SAMMO now supports structured outputs!
 
 ## How to Get Started
@@ -24,7 +25,7 @@ pip install sammo
 ### Install and run tutorials
 
 ***Prerequisites***
-* Python 3.11+
+* Python 3.9+
 
 The following commands will install sammo and jupyter and launch jupyter notebook. It's recommended that you create and activate a virtualenv prior to installing packages.
 

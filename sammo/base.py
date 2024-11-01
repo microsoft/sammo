@@ -4,16 +4,15 @@ from __future__ import annotations
 import abc
 import copy
 import json
-import re
-import webbrowser
 
 from beartype.typing import Callable, Any
 from frozendict import frozendict
 import pyglove as pg
 import pybars
-import tempfile
 from pyglove import Symbolic
 from tabulate import tabulate
+
+from sammo.css_matching import XmlTree
 from sammo.utils import HtmlRenderer, GRAPH_TEMPLATE
 
 # monkey-patch pybars to disable HTML escaping
@@ -239,41 +238,18 @@ class EvaluationScore:
         )
 
 
-class CompiledQuery:
-    __slots__ = "query", "child_selector"
+class PyGloveMatch:
+    __slots__ = ["node", "path"]
 
-    def __init__(self, query, child_selector=None):
-        self.query = query
-        self.child_selector = child_selector
-
-    @classmethod
-    def from_path(cls, path_descriptor: str | dict | Any):
-        if isinstance(path_descriptor, CompiledQuery):
-            return path_descriptor
-        elif isinstance(path_descriptor, str):
-            path_descriptor = {"regex": path_descriptor}
-        child_selector = path_descriptor.pop("_child", None)
-        if path_descriptor.get("regex", None) is not None:
-            regex = path_descriptor["regex"]
-            try:
-                re.compile(regex)
-            except re.error:
-                raise ValueError(f"Invalid regex: {regex}")
-            return cls({"path_regex": regex}, child_selector)
-        else:
-            attribute, value = list(path_descriptor.items())[0]
-            if attribute.lower() == "type":
-                selector = lambda k, v: isinstance(v, value)
-            else:
-                selector = (
-                    lambda k, v: hasattr(v, "sym_hasattr")
-                    and v.sym_hasattr(attribute)
-                    and v.sym_get(attribute) == value
-                )
-            return cls({"custom_selector": selector}, child_selector)
+    def __init__(self, node, path):
+        self.node = node
+        self.path = path
 
     def __repr__(self):
-        return f"CompiledQuery({self.query}, child_selector={self.child_selector})"
+        return str(self)
+
+    def __str__(self):
+        return f"PyGloveMatch(\n  node={str(self.node)[:50]}..., \n  path={self.path}\n)"
 
 
 @pg.symbolize(eq=True)
@@ -284,16 +260,15 @@ class Component:
 
     Args:
         child: Child component. This can be another component or a string.
-        name: The name of the component. If not provided, the class name is used.
+        reference_id: Id for later querying.
+        reference_classes: List of classes that this component belongs to. This is used for querying.
     """
 
     NEEDS_SCHEDULING = False
 
-    def __init__(self, child: Any | str, name: str | None = None):
-        if name is None:
-            self._name = self.__class__.__name__
-        else:
-            self._name = name
+    def __init__(self, child: Any | str, reference_id: str | None = None, reference_classes: list[str] | None = None):
+        self._id = reference_id
+        self._classes = reference_classes
 
         # auto convert strings
         if isinstance(child, (list, tuple)):
@@ -315,42 +290,22 @@ class Component:
             return [cls._unwrap_results(w) for w in v]
         return v
 
-    def query(self, regex_or_query=None, return_path=False, max_matches=1):
-        """Convinience method to query the component tree for a specific component. Uses `pg.query` under the hood.
+    def find_first(self, css_selector: str) -> PyGloveMatch:
+        matches = self.find_all(css_selector)
+        return matches[0] if matches else None
 
-        :param regex_or_query: A regex string or a query dict or a CompiledQuery object.
-        :param return_path: Whether to return a tuple of (path, value) or just the value.
-        :param max_matches: The maximum number of matches to return. None returns everything.
-        :return: Either component, tuple of (path, component) or None if no match was found. List if max_matches > 1.
-        """
-        compiled_query = CompiledQuery.from_path(regex_or_query)
-        matches = list(pg.query(self, **compiled_query.query).items())
-        if max_matches:
-            matches = matches[:max_matches]
+    def find_all(self, css_selector: str) -> list[PyGloveMatch]:
+        paths = XmlTree.from_pyglove(self).find_all(css_selector)
+        return [PyGloveMatch(node=self.sym_get(path), path=path) for path in paths]
 
-        if compiled_query.child_selector is not None:
-            for i in range(len(matches)):
-                path, val = matches[i]
-                matches[i] = (
-                    path + "." + compiled_query.child_selector,
-                    val.sym_get(compiled_query.child_selector),
-                )
-
-        if not matches:
-            return None
-        else:
-            projected = matches if return_path else [m[1] for m in matches]
-            return projected[0] if max_matches == 1 else projected
-
-    def replace_static_text(self, regex_or_query: str | dict | CompiledQuery, new_text: str):
+    def replace_static_text(self, css_selector: str, new_text: str):
         me = pg.clone(self)
-        result = me.query(regex_or_query, return_path=True)
-        if result is None:
-            raise ValueError(f"No match found for {regex_or_query}")
-        path, component = result
-        if not hasattr(component, "set_static_text"):
-            raise ValueError(f"Component {component} has no set_static_text function.")
-        component.set_static_text(new_text)
+        match = me.find_first(css_selector)
+        if match is None:
+            raise ValueError(f"No match found for {css_selector}")
+        if not hasattr(match.node, "set_static_text"):
+            raise ValueError(f"Component {match.node} has no set_static_text function.")
+        match.node.set_static_text(new_text)
         return me
 
     @property
@@ -405,9 +360,11 @@ class Component:
                 "label": node.__class__.__name__,
                 "priority": len(nodes),
                 "details": {
-                    "Parameters": node.to_short_string(max_depth=1, include_root=False)
-                    if isinstance(node, Component)
-                    else str(node),
+                    "Parameters": (
+                        node.to_short_string(max_depth=1, include_root=False)
+                        if isinstance(node, Component)
+                        else str(node)
+                    ),
                 },
             }
             nodes.append({"data": node_data})
@@ -425,6 +382,11 @@ class Component:
         )
         html = GRAPH_TEMPLATE.replace("ELEMENTS", graph)
         return HtmlRenderer(html).render(backend)
+
+    def rebind(self, *args, **kwargs):
+        """Slightly modified version of the original pyGlove rebind method that allows for deleting values."""
+        with pg.allow_partial(True):
+            return super().rebind(*args, **kwargs)
 
     @abc.abstractmethod
     async def _call(
@@ -471,14 +433,15 @@ class Template(Component):
 
     def __init__(
         self,
-        template_text: str,
-        name: str | None = None,
+        content: str,
+        reference_id: str | None = None,
+        reference_classes: list[str] | None = None,
         **dependencies: dict,
     ):
-        super().__init__(template_text, name)
+        super().__init__(content, reference_id, reference_classes)
         self._children = dependencies
         self.dependencies = [d for d in dependencies.values() if isinstance(d, Component)]
-        self._template = self._compile(template_text)
+        self._template = self._compile(content)
 
     @staticmethod
     def _image(this, options=None):
@@ -513,8 +476,8 @@ class Template(Component):
 
 
 class VerbatimText(Template):
-    def __init__(self, template: str, name: str | None = None):
-        super().__init__(template, name)
+    def __init__(self, content: str, reference_id: str | None = None, reference_classes: list[str] | None = None):
+        super().__init__(content, reference_id, reference_classes)
 
     @staticmethod
     def _compile(template_text: str):

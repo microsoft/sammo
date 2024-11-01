@@ -147,7 +147,7 @@ class SmallSearchSpace:
 
     def __call__(self, return_raw=False):
         if self.minibatch_size == "all":
-            minibatch_size = search_op.one_of([1, 5, 10], name="minibatch_size")
+            minibatch_size = search_op.one_of([1, 5, 10], reference_id="minibatch_size")
         else:
             minibatch_size = self.minibatch_size
 
@@ -164,8 +164,8 @@ class SmallSearchSpace:
             ]
         )
         structure = [
-            Section("Task", self.dtrain.constants["instructions"]),
-            Section("Examples", FewshotExamples(self.examples)),
+            Section("Task", self.dtrain.constants["instructions"], reference_id="task"),
+            Section("Examples", FewshotExamples(self.examples), reference_id="examples"),
             Section(
                 "Complete and output in the same format as above",
                 InputData(id_offset=len(self.examples)),
@@ -215,7 +215,7 @@ class RewrittenSearchSpace(SmallSearchSpace):
         )
         result = Output(instructions).run(self.runner).outputs.raw_values[0].value
         rewritten = (
-            Output(GenerateText(result, system_prompt=search_op.one_of(messages, name="message")))
+            Output(GenerateText(result, system_prompt=search_op.one_of(messages, reference_id="message")))
             .run(self.runner)
             .outputs.raw_values[0]
             .value
@@ -282,7 +282,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     ops = {
         "struct": [
             ChangeDataFormat(
-                ".*data_formatter",
+                "data_formatter",
                 [
                     MultiLabelFormatter(all_labels=data["d_train"].outputs.unique()),
                     JSONDataFormatter(),
@@ -290,27 +290,25 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
                 ],
             ),
             ChangeDataFormat(
-                ".*data_formatter",
+                "data_formatter",
                 [
                     MultiLabelFormatter(all_labels=data["d_train"].outputs.unique()),
                     JSONDataFormatter(include_ids=False),
                     XMLDataFormatter(include_ids=False),
                 ],
             ),
-            ChangeSectionsFormat(".*sections_format", ["markdown", "xml"]),
+            ChangeSectionsFormat("sections_format", ["markdown", "xml"]),
         ],
         "examples": [DecreaseInContextExamples(data["d_incontext"], reduction_factor=0.9)],
-        "drop": [DropExamples({"name": "Examples"}), DropIntro({"name": "Task"})],
+        "drop": [DropExamples("#examples"), DropIntro("#task")],
         "rewrite": [
-            InduceInstructions({"name": "Task"}, data["d_incontext"]),
-            ShortenSegment({"name": "Task"}, reduction_factor=0.75),
-            ShortenSegment({"name": "Task"}, reduction_factor=0.5),
-            SegmentToBulletPoints({"name": "Task"}),
-            RemoveStopWordsFromSegment(
-                {"name": "Task"}, [StopwordsCompressor("reuters"), StopwordsCompressor("spacy")]
-            ),
+            InduceInstructions("#task", data["d_incontext"]),
+            ShortenSegment("#task", reduction_factor=0.75),
+            ShortenSegment("#task", reduction_factor=0.5),
+            SegmentToBulletPoints("#task"),
+            RemoveStopWordsFromSegment("#task", [StopwordsCompressor("reuters"), StopwordsCompressor("spacy")]),
             ReplaceParameter(
-                r".*attributes_processor",
+                r"attributes_processor",
                 [None, StopwordsCompressor("reuters"), StopwordsCompressor("spacy")],
             ),
         ],
@@ -335,11 +333,11 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
         def search_space_mutators():
             return [
                 RemoveStopWordsFromSegment(
-                    {"name": "Task"},
+                    "#task",
                     search_op.one_of([StopwordsCompressor("reuters"), StopwordsCompressor("spacy")]),
                 ),
                 ReplaceParameter(
-                    r".*attributes_processor",
+                    r"attributes_processor",
                     search_op.one_of([None, StopwordsCompressor("reuters"), StopwordsCompressor("spacy")]),
                 ),
             ]
@@ -355,7 +353,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
         prompt_optimizer = SequentialSearch(
             runner,
             PruneSyntaxTree(
-                {"name": "Task"},
+                "#task",
                 search_space,
                 objective.accuracy,
                 cache=PersistentDict(MAIN_FOLDER / "trees" / f"{run_id}.cache.json"),
@@ -380,7 +378,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     elif method == "ape":
         prompt_optimizer = BeamSearch(
             runner,
-            APE({"name": "Task"}, search_space, data["d_train"], 5),
+            APE("#task", search_space, data["d_train"], 5),
             objective,
             maximize=False,
             n_initial_candidates=12,

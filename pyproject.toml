@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.2.7"
+version = "0.3.0.rc1"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -33,6 +33,7 @@ diskcache = "^5.2"
 dill = "^0.3"
 quattro = "^24"
 async-timeout = "^4.0.3"
+lxml = "^5.3"
 
 [tool.poetry.extras]
 parser = ["benepar"]
@@ -81,3 +82,6 @@ cmd = "pre-commit run --all --show-diff-on-failure --color=always"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

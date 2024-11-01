@@ -72,7 +72,7 @@ class RagSearchSpace:
         self._embedding_runner = embedding_runner
 
     def __call__(self, return_raw=False):
-        orientation = search_op.one_of(["item", "kind"], name="orientation")
+        orientation = search_op.one_of(["item", "kind"], reference_id="orientation")
         example_formatter = search_op.one_of(
             [
                 QuestionAnswerFormatter(
@@ -83,7 +83,7 @@ class RagSearchSpace:
             ]
         )
 
-        instr = search_op.one_of(["full_dd", "list_of_operators"], name="instructions")
+        instr = search_op.one_of(["full_dd", "list_of_operators"], reference_id="instructions")
         structure = [
             Section("Syntax", f"{self.dtrain.constants[instr]}"),
             Section(
@@ -91,7 +91,7 @@ class RagSearchSpace:
                 EmbeddingFewshotExamples(
                     self._embedding_runner,
                     self.examples,
-                    search_op.one_of([10, 5], name="n_examples"),
+                    search_op.one_of([10, 5], reference_id="n_examples"),
                     budget="relative",
                 ),
             ),

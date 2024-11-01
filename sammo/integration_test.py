@@ -53,7 +53,7 @@ def test_search():
     def prompt_space():
         prompt = GenerateText(
             Template(f"{{input}}"),
-            randomness=one_of([0.3, 0.7, 1.0], name="randomness"),
+            randomness=one_of([0.3, 0.7, 1.0], reference_id="randomness"),
         )
         return Output(prompt)
 
