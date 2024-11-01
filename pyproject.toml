@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sammo"
-version = "0.3.0.rc1"
+version = "0.3.0.rc2"
 description = "A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs)."
 authors = ["Tobias Schnabel"]
 license = "MIT"
@@ -34,6 +34,8 @@ dill = "^0.3"
 quattro = "^24"
 async-timeout = "^4.0.3"
 lxml = "^5.3"
+cssselect = "^1.2"
+mistletoe = "^1.4"
 
 [tool.poetry.extras]
 parser = ["benepar"]
