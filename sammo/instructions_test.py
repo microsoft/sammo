@@ -18,11 +18,9 @@ from sammo.runners import MockedRunner
             "xml",
             (
                 "<section>\n"
-                "<id>None</id>\n"
-                "<name>Section</name>\n"
+                "<title>Section</title>\n"
                 "<section>\n"
-                "<id>None</id>\n"
-                "<name>Subsection</name>Subsection text.\n"
+                "<title>Subsection</title>Subsection text.\n"
                 "</section>\n"
                 "</section>"
             ),
@@ -34,7 +32,8 @@ from sammo.runners import MockedRunner
 async def test_basic_render(render_as, expected):
     runner = MockedRunner()
     rendered = await MetaPrompt(
-        [Section(name="Section", content=[Section(name="Subsection", content="Subsection text.")])], render_as=render_as
+        [Section(title="Section", content=[Section(title="Subsection", content="Subsection text.")])],
+        render_as=render_as,
     )(runner, dict())
     assert rendered.value == expected
 
@@ -49,7 +48,7 @@ async def test_basic_render(render_as, expected):
 async def test_basic_render_text(render_as, expected):
     runner = MockedRunner()
     rendered = await MetaPrompt(
-        [Section(name="A", content="Some text.\n"), Section(name="B", content="Other text.")], render_as=render_as
+        [Section(title="A", content="Some text.\n"), Section(title="B", content="Other text.")], render_as=render_as
     )(runner, dict())
     assert rendered.value == expected
 
@@ -61,19 +60,16 @@ async def test_basic_render_text(render_as, expected):
         (
             "xml",
             (
-                "<section>\n"
-                "<id>None</id>\n"
-                "<name>Section</name>\n"
-                "<paragraph>\n"
-                "<id>None</id>\n"
-                "<name>None</name>Paragraph 1\n"
-                "</paragraph>\n"
-                "\n"
-                "<paragraph>\n"
-                "<id>None</id>\n"
-                "<name>None</name>Paragraph 2\n"
-                "</paragraph>\n"
-                "</section>"
+                (
+                    "<section>\n"
+                    "<title>Section</title>\n"
+                    "<paragraph>Paragraph 1\n"
+                    "</paragraph>\n"
+                    "\n"
+                    "<paragraph>Paragraph 2\n"
+                    "</paragraph>\n"
+                    "</section>"
+                )
             ),
         ),
         ("markdown", "# Section\nParagraph 1\n\n\nParagraph 2"),
@@ -83,7 +79,8 @@ async def test_basic_render_text(render_as, expected):
 async def test_paragraph(render_as, expected):
     runner = MockedRunner()
     rendered = await MetaPrompt(
-        [Section(name="Section", content=[Paragraph("Paragraph 1"), Paragraph("Paragraph 2")])], render_as=render_as
+        [Section(title="Section", content=[Paragraph("Paragraph 1"), Paragraph("Paragraph 2")])],
+        render_as=render_as,
     )(runner, dict())
     assert rendered.value == expected
 
@@ -102,14 +99,10 @@ async def test_raw_render():
         (
             "xml",
             (
-                "<paragraph>\n"
-                "<id>None</id>\n"
-                "<name>None</name>Paragraph 1\n"
+                "<paragraph>Paragraph 1\n"
                 "</paragraph>\n"
                 "\n"
-                "<paragraph>\n"
-                "<id>None</id>\n"
-                "<name>None</name>Input: {'name': 'Alice', 'age': 25}\n"
+                "<paragraph>Input: {'name': 'Alice', 'age': 25}\n"
                 "\n"
                 "Input: {'name': 'Bob', 'age': 30}\n"
                 "\n"

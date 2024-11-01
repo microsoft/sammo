@@ -36,8 +36,8 @@ __all__ = ["GenerateText", "Output", "Union", "ForEach"]
 class GenerateText(Component):
     """Call the LLM to generate a response.
 
-    :param child: The child component to run.
-    :param name: The name of the component for later querying.
+    :param child: The content component to run.
+    :param reference_id: The reference_id of the component for later querying.
     :param system_prompt: A system prompt to use.
     :param history: A previous chat conversation to continue. Cannot be used with system_prompt.
     :param seed: The local seed to use for caching. Needs to be changed if sampling from LLM multiple times.
@@ -52,7 +52,7 @@ class GenerateText(Component):
     def __init__(
         self,
         child: Component,
-        name=None,
+        reference_id=None,
         system_prompt: TUnion[str, None] = None,
         history: TUnion[Component, None] = None,
         seed=0,
@@ -63,7 +63,7 @@ class GenerateText(Component):
         *,  # the following arguments are keyword only
         runner: Runner | None = None,
     ):
-        super().__init__(child, name)
+        super().__init__(child, reference_id)
 
         if history and system_prompt:
             raise ValueError("Cannot specify both history and system_prompt.")
@@ -127,15 +127,15 @@ class GenerateText(Component):
 class Union(Component):
     """Union of multiple components. Runs all components and returns the union of their results as list.
 
-    :param children: The child components to run.
-    :param name: The name of the component for later querying.
+    :param children: The content components to run.
+    :param reference_id: The reference_id of the component for later querying.
     """
 
-    def __init__(self, *children: Component, name: str | None = None):
+    def __init__(self, *children: Component, reference_id: str | None = None):
         if len(children) == 0:
             raise ValueError("Must be given at least one component.")
 
-        super().__init__(children, name)
+        super().__init__(children, reference_id)
         self.dependencies = self._child
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
@@ -171,13 +171,13 @@ class Union(Component):
 class JoinStrings(Union):
     """Join the results of multiple components into a single string.
 
-    :param children: The child components to run.
+    :param children: The content components to run.
     :param separator: The separator to use between the strings.
-    :param name: The name of the component for later querying.
+    :param reference_id: The reference_id of the component for later querying.
     """
 
-    def __init__(self, *children: Component, separator: str, name: str | None = None):
-        super().__init__(*children, name=name)
+    def __init__(self, *children: Component, separator: str, reference_id: str | None = None):
+        super().__init__(*children, reference_id=reference_id)
         self._separator = separator
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Result:
@@ -187,13 +187,13 @@ class JoinStrings(Union):
 
 
 class ForEach(Component):
-    """Run a component for each output element of a child.
+    """Run a component for each output element of a content.
     The operator is run in parallel and the results are flattened.
 
-    :param loop_variable: The name of the variable to use for the loop.
-    :param child: The child component whose results are looped over.
+    :param loop_variable: The reference_id of the variable to use for the loop.
+    :param child: The content component whose results are looped over.
     :param operator: The operator to run for each element.
-    :param name: The name of the component for later querying.
+    :param reference_id: The reference_id of the component for later querying.
     """
 
     NEEDS_SCHEDULING = True
@@ -203,9 +203,9 @@ class ForEach(Component):
         loop_variable: str,
         child: Component,
         operator: Component,
-        name: str | None = None,
+        reference_id: str | None = None,
     ):
-        super().__init__(operator, name)
+        super().__init__(operator, reference_id)
         self._loop_variable = loop_variable
         self._collection = child
         self._operator = operator
@@ -270,10 +270,10 @@ class Minibatch:
 
 @beartype.beartype
 class Output(Component):
-    """Final output of a prompt pipeline. Runs the child component on each batch in the input and has an
+    """Final output of a prompt pipeline. Runs the content component on each batch in the input and has an
     optional extraction step.
 
-    :param child: The child component to run.
+    :param child: The content component to run.
     :param minibatch_size: Number of rows to pack into a single prompt.
     """
 

@@ -118,7 +118,7 @@ class InstructionTuningSearchSpace:
                             self.dtrain.constants["instructions"] * 2,
                         ]
                     ),
-                    id="instructions",
+                    reference_id="instructions",
                 ),
                 Paragraph("\n"),
                 Paragraph(f"Output labels: {', '.join(labels)}\n" if len(labels) <= 10 else ""),
@@ -175,7 +175,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     if method == "ape":
         prompt_optimizer = BeamSearch(
             runner,
-            APE({"id": "instructions"}, search_space, data["d_train"], 5),
+            APE("#instructions", search_space, data["d_train"], 5),
             accuracy,
             maximize=True,
             n_initial_candidates=12,
@@ -188,7 +188,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
         prompt_optimizer = BeamSearch(
             runner,
             APO(
-                {"id": "instructions", "_child": "content"},
+                "#instructions content",
                 search_space,
                 num_gradients=2,
                 steps_per_gradient=1,
@@ -203,7 +203,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
         )
     elif method == "grips":
         mutation_operators = SyntaxTreeMutator(
-            {"id": "instructions"},
+            "#instructions",
             search_space,
             PersistentDict(MAIN_FOLDER / "trees" / f"{run_id}.cache.json"),
         )
@@ -221,15 +221,15 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
     elif method == "sammo":
         mutation_operators = BagOfMutators(
             search_space,
-            InduceInstructions({"id": "instructions"}, data["d_incontext"]),
+            InduceInstructions("#instructions", data["d_incontext"]),
             APO(
-                {"id": "instructions", "_child": "content"},
+                "#instructions content",
                 None,
                 num_gradients=2,
                 steps_per_gradient=1,
                 num_rewrites=0,
             ),
-            Paraphrase({"id": "instructions"}),
+            Paraphrase("#instructions"),
             sample_for_init_candidates=True,
         )
         prompt_optimizer = BeamSearch(

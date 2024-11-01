@@ -230,7 +230,7 @@ class BeamSearch(Optimizer):
         depth: int = 6,
         mutations_per_beam: int = 8,
         n_initial_candidates: int = 1,
-        add_previous: bool = False,
+        add_previous: bool = True,
         priors: Literal["uniform"] | dict = "uniform",
         max_evals: int | None = None,
     ):

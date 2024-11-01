@@ -17,9 +17,8 @@ import spacy
 
 import sammo.base
 import sammo.runners
-from sammo.base import Component, Template, Runner, CompiledQuery
+from sammo.base import Component, Template, Runner
 from sammo.components import Output, GenerateText, Union, ForEach
-from sammo.instructions import FewshotExamples
 from sammo.data import DataTable
 from sammo.extractors import ExtractRegex
 from sammo.search_op import get_points_from_search_space
@@ -102,12 +101,12 @@ class SyntaxTreeMutator(Mutator):
 
     def __init__(
         self,
-        path_descriptor: str | dict,
+        css_selector: str,
         starting_prompt: Output | Callable,
         cache: collections.abc.MutableMapping | None = None,
     ):
         super().__init__(starting_prompt)
-        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
+        self._css_selector = css_selector
         self._full_performance = None
         self._cache = {} if cache is None else cache
         self._state = dict()
@@ -150,7 +149,7 @@ class SyntaxTreeMutator(Mutator):
         return sum(phrases, [])
 
     def applicable(self, candidate: Output):
-        return candidate.query(self._path_descriptor) is not None
+        return candidate.find_first(self._css_selector) is not None
 
     @staticmethod
     def replace_all_elements(l, needle, replacement):
@@ -185,7 +184,7 @@ class SyntaxTreeMutator(Mutator):
         random_state: int = 42,
     ) -> list[MutatedCandidate]:
         if id(candidate) not in self._state:
-            instructions = candidate.query(self._path_descriptor)
+            instructions = candidate.find_first(self._css_selector).node
             if hasattr(instructions, "static_text"):
                 instructions = instructions.static_text()
             else:
@@ -269,7 +268,7 @@ class SyntaxTreeMutator(Mutator):
         candidates = list()
         for new_cand in new_candidates:
             mutated_cand = candidate.replace_static_text(
-                self._path_descriptor, self._join_all_elements(new_cand["phrases"])
+                self._css_selector, self._join_all_elements(new_cand["phrases"])
             )
             self._state[id(mutated_cand)] = new_cand
             candidates.append(MutatedCandidate(new_cand["action"], mutated_cand))
@@ -314,12 +313,10 @@ class PruneSyntaxTree(SyntaxTreeMutator):
     def _patch(self, candidate, prompt=None):
         if prompt is None:
             prompt = self._current_prompt
-        return candidate.replace_static_text(
-            self._path_descriptor, "".join(self._syntax_tree[k]["val"] for k in prompt)
-        )
+        return candidate.replace_static_text(self._css_selector, "".join(self._syntax_tree[k]["val"] for k in prompt))
 
     def _load_syntax_tree(self, candidate):
-        instructions = candidate.query(self._path_descriptor)
+        instructions = candidate.query(self._css_selector)
         if hasattr(instructions, "static_text"):
             instructions = instructions.static_text()
         if instructions not in self._cache:
@@ -364,18 +361,17 @@ class PruneSyntaxTree(SyntaxTreeMutator):
 
 
 class ShortenSegment(Mutator):
-    def __init__(self, path_descriptor: str | dict, reduction_factor: float = 0.5):
+    def __init__(self, css_selector: str, reduction_factor: float = 0.5):
         super().__init__()
-        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
+        self._css_selector = css_selector
         self._reduction_factor = reduction_factor
 
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state: int = 42
     ) -> list[MutatedCandidate]:
-        segments = candidate.query(self._path_descriptor, return_path=True, max_matches=None)
-        segment_content = segments[0][1]
-        segment_paths = [s[0] + ".content" for s in segments]
-        segment_content = segment_content.static_text()
+        matches = candidate.find_all(self._css_selector)
+        segment_paths = [m.path + ".content" if m.node.sym_hasattr("content") else "" for m in matches]
+        segment_content = matches[0].node.static_text()
         rewritten = await self._rewrite(runner, segment_content, n_mutations, random_state)
         return [
             MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={p: r for p in segment_paths}))
@@ -383,15 +379,15 @@ class ShortenSegment(Mutator):
         ]
 
     def applicable(self, candidate: Output):
-        return candidate.query(self._path_descriptor) is not None
+        return candidate.find_first(self._css_selector) is not None
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_state):
         n_words = len(str(segment_content).split()) * self._reduction_factor
         rewritten = await Output(
             GenerateText(
                 Template(
-                    f"Summarize the text below in {n_words:0.0f} words or less. \n\n" "{{{content}}}",
-                    content=segment_content,
+                    f"Summarize the text below in {n_words:0.0f} words or less. \n\n" "{{{text}}}",
+                    text=segment_content,
                 )
             )
         ).arun(runner)
@@ -401,7 +397,7 @@ class ShortenSegment(Mutator):
 class APO(Mutator):
     def __init__(
         self,
-        path_descriptor: str | dict,
+        css_selector: str,
         starting_prompt: Output | Callable | None,
         num_rewrites=2,
         num_sampled_errors=4,
@@ -411,7 +407,7 @@ class APO(Mutator):
         seed=42,
     ):
         super().__init__(starting_prompt, seed)
-        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
+        self._css_selector = css_selector
         self._n_rewrites = num_rewrites
         self._n_sampled_errors = num_sampled_errors
         self._n_gradients = num_gradients
@@ -426,7 +422,10 @@ class APO(Mutator):
         n_mutations: int = 1,
         random_state: int = 42,
     ) -> list[MutatedCandidate]:
-        segment_path, segment_content = candidate.query(self._path_descriptor, return_path=True)
+        match = candidate.find_first(self._css_selector)
+        segment_path = match.path
+        segment_content = match.node
+
         if hasattr(segment_content, "static_text"):
             current_instructions = segment_content.static_text()
         else:
@@ -453,7 +452,8 @@ class APO(Mutator):
             sampled_errors += [(yrow, ytrue, ypred)]
 
         # generate "gradients" - 1 call
-        example_formatter = candidate.query(".*data_formatter")
+        example_formatter = candidate.find_first("data_formatter").node
+
         intro = Template(
             "I'm trying to write a zero-shot classifier prompt.\n"
             "My current prompt is: <PROMPT>{{{current_instructions}}}</PROMPT>\n"
@@ -548,12 +548,12 @@ class APE(ShortenSegment):
 
     def __init__(
         self,
-        path_descriptor: str | dict,
+        css_selector: str,
         starting_prompt: Output | Callable,
         d_incontext: DataTable,
         n_incontext_subsamples: int | None = None,
     ):
-        super().__init__(path_descriptor)
+        super().__init__(css_selector)
         self._starting_prompt = starting_prompt
         self._seed = 42
         self._d_incontext = d_incontext
@@ -566,7 +566,7 @@ class APE(ShortenSegment):
         return await self._induce_instructions(candidate, runner, n_initial_candidates, self._seed)
 
     async def _induce_instructions(self, candidate, runner, n_mutations, random_state):
-        example_formatter = candidate.query(".*data_formatter")
+        example_formatter = candidate.find_first("data_formatter").node
         candidates = list()
         for i in range(n_mutations):
             if self._n_incontext_subsamples is None:
@@ -580,7 +580,7 @@ class APE(ShortenSegment):
             candidates.append(induced_instructions)
         induced = (await Output(Union(*candidates)).arun(runner)).outputs.raw_values[0].values_as_list()
         return [
-            MutatedCandidate(self.__class__.__name__, candidate.replace_static_text(self._path_descriptor, r))
+            MutatedCandidate(self.__class__.__name__, candidate.replace_static_text(self._css_selector, r))
             for r in induced
         ][:n_mutations]
 
@@ -602,8 +602,8 @@ class APE(ShortenSegment):
 
 
 class InduceInstructions(APE):
-    def __init__(self, path_descriptor: str | dict, d_incontext: DataTable):
-        super().__init__(path_descriptor, None, d_incontext)
+    def __init__(self, css_selector: str | dict, d_incontext: DataTable):
+        super().__init__(css_selector, None, d_incontext)
 
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state: int = 42
@@ -619,8 +619,8 @@ class SegmentToBulletPoints(ShortenSegment):
                     GenerateText(
                         Template(
                             f"Rewrite the text below as a bullet list with at most 10 words per bullet point. \n\n"
-                            "{{{content}}}",
-                            content=segment_content,
+                            "{{{text}}}",
+                            text=segment_content,
                         )
                     )
                 ).arun(runner)
@@ -635,8 +635,8 @@ class Paraphrase(ShortenSegment):
         rewrites = [
             GenerateText(
                 Template(
-                    "Paraphrase the text inside the tags. Do not output the tags. \n\n" "<TEXT>{{{content}}}</TEXT>",
-                    content=segment_content,
+                    "Paraphrase the text inside the tags. Do not output the tags. \n\n" "<TEXT>{{{text}}}</TEXT>",
+                    text=segment_content,
                 ),
                 randomness=0.9,
                 seed=random_state + i,
@@ -647,8 +647,8 @@ class Paraphrase(ShortenSegment):
 
 
 class RemoveStopWordsFromSegment(ShortenSegment):
-    def __init__(self, path_descriptor: str | dict, choices: Any):
-        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
+    def __init__(self, css_selector: str | dict, choices: Any):
+        self._path_descriptor = css_selector
         self._choices = choices
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_seed):
@@ -659,34 +659,36 @@ class RemoveStopWordsFromSegment(ShortenSegment):
 
 
 class DropParameter(Mutator):
-    def __init__(self, path_descriptor: str | dict):
-        self._path_descriptor = CompiledQuery.from_path(path_descriptor)
+    def __init__(self, css_selector: str):
+        self._css_selector = css_selector
 
     def applicable(self, candidate: Output):
-        return candidate.query(self._path_descriptor) is not None
+        return candidate.find_first(self._css_selector) is not None
 
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state: int = 42
     ) -> list[MutatedCandidate]:
-        current_path, current_value = candidate.query(self._path_descriptor, return_path=True)
+        current_path = candidate.find_first(self._css_selector).path
+
         dropped = pg.clone(candidate).rebind({current_path: pg.MISSING_VALUE})
         return [MutatedCandidate(self.__class__.__name__, dropped)]
 
 
 class RepeatSegment(DropParameter):
-    def __init__(self, path_descriptor: str | dict, after: str | dict):
-        super().__init__(path_descriptor)
-        self._after = CompiledQuery.from_path(after)
+    def __init__(self, css_selector: str, after: str):
+        super().__init__(css_selector)
+        self._after = after
 
     def applicable(self, candidate: Output):
-        return candidate.query(self._path_descriptor) is not None and candidate.query(self._after) is not None
+        return candidate.find_first(self._css_selector) is not None and candidate.find_first(self._after) is not None
 
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state: int = 42
     ) -> list[MutatedCandidate]:
         repeated = candidate.clone()
-        current_value = repeated.query(self._path_descriptor)
-        after_value = repeated.query(self._after)
+        current_value = candidate.find_first(self._css_selector).node
+        after_value = repeated.find_first(self._after).node
+
         index = after_value.sym_path.key
         if not isinstance(index, int):
             raise ValueError("RepeatSegment can only be used with lists.")
@@ -703,8 +705,8 @@ class DropIntro(DropParameter):
 
 
 class ReplaceParameter(DropParameter):
-    def __init__(self, path_descriptor: str | dict, choices: Any):
-        super().__init__(path_descriptor)
+    def __init__(self, css_selector: str, choices: Any):
+        super().__init__(css_selector)
         self._choices = choices
 
     async def mutate(
@@ -720,15 +722,15 @@ class ReplaceParameter(DropParameter):
         return mutations
 
     def _sample_new_values(self, candidate, n_mutations, random_state):
-        current_path, current_value = candidate.query(self._path_descriptor, return_path=True)
+        current = candidate.find_first(self._css_selector)
         if not isinstance(self._choices, list):
             # if we only have a single value, deterministically replace it
             new_values = [self._choices]
         else:
-            valid_values = [v for v in self._choices if v != current_value]
+            valid_values = [v for v in self._choices if v != current.node]
             rng = random.Random(random_state)
             new_values = rng.sample(valid_values, min(n_mutations, len(valid_values)))
-        return current_path, new_values
+        return current.path, new_values
 
 
 class ChangeDataFormat(ReplaceParameter):
@@ -739,8 +741,10 @@ class ChangeDataFormat(ReplaceParameter):
         mutations = list()
         for new_value in new_values:
             mutation = pg.clone(candidate, override={current_path: new_value})
-            parser = new_value.get_extractor(mutation.query({"type": GenerateText}), on_error="empty_result")
-            mutation.rebind({"child": parser})
+            parser = new_value.get_extractor(
+                mutation.sym_get(mutation.css_query("generatetext")[0]), on_error="empty_result"
+            )
+            mutation.rebind({"content": parser})
             mutations.append(MutatedCandidate(self.__class__.__name__, mutation))
         return mutations
 
@@ -756,19 +760,19 @@ class DecreaseInContextExamples(Mutator):
         self._min_examples = min_examples
 
     def applicable(self, candidate: Output):
-        return candidate.query({"type": FewshotExamples}) is not None
+        return candidate.find_first("fewshotexamples") is not None
 
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state=42
     ) -> list[MutatedCandidate]:
         mutated = list()
-        current_path, current_value = candidate.query({"type": FewshotExamples, "_child": "data"}, return_path=True)
-        n_examples = max(self._min_examples, int(len(current_value) * self._reduction_factor))
+        current = candidate.find_first("fewshotexamples data")
+        n_examples = max(self._min_examples, int(len(current.node) * self._reduction_factor))
 
         for i in range(n_mutations):
             new_data = self._d_incontext.sample(n_examples, random_state)
             mutated.append(
-                MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={current_path: new_data}))
+                MutatedCandidate(self.__class__.__name__, pg.clone(candidate, override={current.path: new_data}))
             )
 
         return mutated
@@ -784,41 +788,14 @@ class BagOfMutators(Mutator):
     def applicable(self, candidate: Output):
         return any(m.applicable(candidate) for m in self._bag)
 
-    @staticmethod
-    def draw_beta_bernoulli(n_samples: int, success_failure_pairs: list[tuple[int]], priors=(2, 6), seed=42):
-        success_failure_pairs = np.asarray(success_failure_pairs).T
-        if success_failure_pairs.shape[0] != 2:
-            raise ValueError("success_failure_pairs must be of shape (*, 2)")
-        rng = np.random.default_rng(seed)
-        successes, failures = success_failure_pairs
-        alphas, betas = np.asarray(successes) + priors[0], np.asarray(failures) + priors[1]
-        posterior_samples = rng.beta(alphas, betas, size=(n_samples, len(alphas)))
-        return np.argmax(posterior_samples, axis=1).tolist()
-
-    @staticmethod
-    def draw_map_beta_bernoulli(n_samples: int, success_failure_pairs: list[tuple[int]], priors=(5, 5), seed=None):
-        success_failure_pairs = np.asarray(success_failure_pairs).T
-        if success_failure_pairs.shape[0] != 2:
-            raise ValueError("success_failure_pairs must be of shape (*, 2)")
-        rng = np.random.default_rng(seed)
-        successes, failures = success_failure_pairs
-        alphas, betas = np.asarray(successes) + priors[0], np.asarray(failures) + priors[1]
-        mode = (alphas - 1) / (alphas + betas - 2)
-        p = mode / mode.sum()
-        return np.argmax(rng.multinomial(1, p, size=n_samples), axis=1).tolist()
-
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state=None
     ) -> list[MutatedCandidate]:
         bag = [m for m in self._bag if m.applicable(candidate)]
         if not bag:
             return list()
-        if not self.priors:
-            selected_mutators = random.Random(random_state).choices(bag, k=n_mutations)
-        else:
-            action_stats = [self.priors.get(m.__class__.__name__, (0, 0)) for m in bag]
-            idx = self.draw_map_beta_bernoulli(n_mutations, action_stats, seed=random_state)
-            selected_mutators = [bag[i] for i in idx]
+
+        selected_mutators = random.Random(random_state).choices(bag, k=n_mutations)
 
         if n_mutations == 1:
             return await selected_mutators[0].mutate(candidate, data, runner, random_state)

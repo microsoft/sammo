@@ -72,49 +72,49 @@ class ManyOfPatched(ManyOf):
         return ""
 
 
-def one_of(candidates: Iterable, name: str | None = None) -> Any:
+def one_of(candidates: Iterable, reference_id: str | None = None) -> Any:
     """Search operator for selecting one of the given candidates.
 
     :param candidates: The list of candidates to choose from.
-    :param name: The name of the operator for later reference.
+    :param reference_id: Identifier for later reference.
     """
-    return OneOfPatched([(lambda n=x: n)(x) if not callable(x) else x for x in candidates], name=name)
+    return OneOfPatched([(lambda n=x: n)(x) if not callable(x) else x for x in candidates], name=reference_id)
 
 
-def many_of(num_choices: int, candidates: Iterable, name: str | None = None) -> Any:
+def many_of(num_choices: int, candidates: Iterable, reference_id: str | None = None) -> Any:
     """Search operator for n choose k.
 
     :param num_choices: The number of candidates to choose.
     :param candidates: The list of candidates to choose from.
-    :param name: The name of the operator for later reference.
+    :param reference_id: Identifier for later reference.
     """
     return ManyOfPatched(
         num_choices=num_choices,
         choices_sorted=True,
         candidates=[(lambda n=x: n)(x) if not callable(x) else x for x in candidates],
-        name=name,
+        name=reference_id,
     )
 
 
-def permutate(candidates: Iterable, name: str | None = None) -> Any:
+def permutate(candidates: Iterable, reference_id: str | None = None) -> Any:
     """Search operator for permutating a list of components.
 
     :param candidates: The list of components to permute.
-    :param name: The name of the operator for later reference.
+    :param reference_id: Identifier for later reference.
     """
     return ManyOfPatched(
         num_choices=len(list(candidates)),
         choices_distinct=True,
         choices_sorted=False,
         candidates=[(lambda n=x: n)(x) if not callable(x) else x for x in candidates],
-        name=name,
+        name=reference_id,
     )
 
 
-def optional(candidate, name=None) -> Any:
+def optional(candidate, reference_id=None) -> Any:
     """Search operator for making a component optional.
 
     :param val: The value to include or exclude.
-    :param name: The name of the operator for later reference.
+    :param reference_id: Identifier for later reference.
     """
-    return one_of([[], [candidate]])
+    return one_of([[], [candidate]], reference_id=reference_id)

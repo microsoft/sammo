@@ -121,7 +121,7 @@ def load_program(path):
 
 @click.command()
 @click.option("--llm", default=MODELS[0], type=click.Choice(MODELS), prompt=True)
-@click.option("--task-id", default=TASKS[0], type=click.Choice(TASKS), prompt=True)
+@click.option("--task-reference_id", default=TASKS[0], type=click.Choice(TASKS), prompt=True)
 @click.option("--uuid", default=None, type=str)
 @click.option("--confirmed", is_flag=True, default=None)
 def main(llm, task_id, uuid, confirmed, num_threads=24, show_example=True):

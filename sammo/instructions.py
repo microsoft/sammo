@@ -12,13 +12,14 @@ from sammo.dataformatters import DataFormatter
 
 
 class Renderer(Component):
-    def __init__(self, content, name: str | None = None):
-        super().__init__(content, name)
+    def __init__(self, content, reference_id: str | None = None, reference_classes: list[str] | None = None):
+        super().__init__(content, reference_id)
         if not isinstance(content, list):
             content = [content]
         if not isinstance(self, Paragraph):
             content = [Paragraph(c) if isinstance(content, str) else c for c in content]
         self.content = content
+        self._classes = reference_classes
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Component:
         depth = dynamic_context.get("depth", -1)
@@ -40,9 +41,10 @@ class Renderer(Component):
 
 
 class Section(Renderer):
-    def __init__(self, name, content, id=None):
-        super().__init__(content, name)
-        self.id = id
+    def __init__(self, title, content, reference_id=None, reference_classes=None):
+        super().__init__(content, reference_id)
+        self._title = title
+        self._classes = reference_classes
 
     def static_text(self, sep="\n"):
         return "\n".join([v.static_text(sep) if hasattr(v, "static_text") else str(v) for v in self.content])
@@ -53,7 +55,7 @@ class Section(Renderer):
     def render_as_markdown(self, data, alternative_headings=False, depth=0, **kwargs):
         UNDERLINES = ["=", "-"]
         md_string = ""
-        title = self._name
+        title = self._title
         if alternative_headings:
             if depth > 2:
                 raise ValueError("Alternative headings are only supported up to depth 2.")
@@ -68,10 +70,10 @@ class Section(Renderer):
         xml_element_w_tag = lambda x, tag: f"\n<{tag}>{x}</{tag}>"
 
         inner = ""
-        if hasattr(self, "id"):
-            inner += xml_element_w_tag(self.id, "id")
-
-        inner += xml_element_w_tag(self._name, "name")
+        if self._id is not None:
+            inner += xml_element_w_tag(self.id, "reference_id")
+        if self._title is not None:
+            inner += xml_element_w_tag(self._title, "title")
         return outer_element(inner + "\n".join(content))
 
     def render_as_raw(self, content):
@@ -79,8 +81,8 @@ class Section(Renderer):
 
 
 class Paragraph(Section):
-    def __init__(self, content, id=None):
-        super().__init__(None, content, id)
+    def __init__(self, content, reference_id=None, reference_classes=None):
+        super().__init__(None, content, reference_id, reference_classes)
         self._name = None
 
     def render_as_markdown(self, data, alternative_headings=False, depth=0):
@@ -93,10 +95,10 @@ class MetaPrompt(Renderer):
         child: list[Paragraph | Section] | Paragraph | Section,
         render_as: Literal["raw", "xml", "markdown", "markdown-alt"] = "markdown",
         data_formatter: DataFormatter | None = None,
-        name: str | None = None,
+        reference_id: str | None = None,
         seed: int = 0,
     ):
-        super().__init__(child, name)
+        super().__init__(child, reference_id)
 
         self._render_as = render_as
         self._data_formatter = data_formatter
@@ -130,9 +132,9 @@ class FewshotExamples(Component):
         self,
         data: DataTable,
         n_examples: int | None = None,
-        name: str | None = None,
+        reference_id: str | None = None,
     ):
-        super().__init__(None, name)
+        super().__init__(None, reference_id)
         self._data = data
         if n_examples is None:
             n_examples = len(data)
@@ -150,10 +152,10 @@ class RandomFewshotExamples(FewshotExamples):
         self,
         data: DataTable,
         n_examples: int | None = None,
-        name: str | None = None,
+        reference_id: str | None = None,
         seed: int = 0,
     ):
-        super().__init__(data, n_examples, name)
+        super().__init__(data, n_examples, reference_id)
         self._data = data.sample(len(data), seed=seed)
 
 
@@ -165,12 +167,12 @@ class EmbeddingFewshotExamples(FewshotExamples):
         embedder: Runner,
         data: DataTable,
         n_examples: int | None = None,
-        name: str | None = None,
+        reference_id: str | None = None,
         aggregate: Literal["roundrobin", "max"] = "roundrobin",
         filter_exact_matches: bool = True,
         budget: Literal["absolute", "relative"] = "absolute",
     ):
-        super().__init__(data, n_examples, name)
+        super().__init__(data, n_examples, reference_id)
         self._embedder = embedder
         self._aggregate = aggregate
         self._data = data
@@ -216,9 +218,9 @@ class InputData(Component):
     def __init__(
         self,
         id_offset: int = 0,
-        name: str | None = None,
+        reference_id: str | None = None,
     ):
-        super().__init__(None, name)
+        super().__init__(None, reference_id)
         self.id_offset = id_offset
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
