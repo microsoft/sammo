@@ -324,11 +324,14 @@ class Component:
         out = list()
 
         def t(k, v, p):
+            if k == "api_config":
+                return pg.TraverseAction.CONTINUE
             if not k.is_root:
-                if isinstance(v, Component):
+                if not isinstance(v, (int, float, str, bool)):
                     name = v.__class__.__name__
                 else:
                     name = v
+
                 out.append(f"{(k.depth-1)*'   '}- {k.key}: {name}")
             elif include_root:
                 out.append(f"{v.__class__.__name__}()")
