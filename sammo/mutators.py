@@ -278,12 +278,12 @@ class SyntaxTreeMutator(Mutator):
 class PruneSyntaxTree(SyntaxTreeMutator):
     def __init__(
         self,
-        path_descriptor: str | dict,
+        css_selector: str | dict,
         starting_prompt: Output | Callable,
         prune_metric: Callable,
         cache: collections.abc.MutableMapping | None = None,
     ):
-        super().__init__(path_descriptor, starting_prompt, cache)
+        super().__init__(css_selector, starting_prompt, cache)
         self._current_prompt = ["0"]
         self._queue = ["0"]
         self._full_performance = None
@@ -360,11 +360,18 @@ class PruneSyntaxTree(SyntaxTreeMutator):
         return [MutatedCandidate(action, self._patch(candidate))]
 
 
-class ShortenSegment(Mutator):
-    def __init__(self, css_selector: str, reduction_factor: float = 0.5):
+class Rewrite(Mutator):
+    TEMPLATE = "Rewrite the text below. \n\n" "{{{{text}}}}"
+    DETERMINISTIC = True
+
+    def __init__(self, css_selector: str, rewrite_instructions: str | None = None, deterministic=None, **kwargs):
         super().__init__()
         self._css_selector = css_selector
-        self._reduction_factor = reduction_factor
+        self._rewrite_instructions = rewrite_instructions or self.TEMPLATE
+        if "{{{{text}}}}" not in self._rewrite_instructions:
+            raise ValueError("The rewrite instructions must contain the placeholder '{{{{text}}}}'")
+        self._deterministic = deterministic or self.DETERMINISTIC
+        self._kwargs = kwargs
 
     async def mutate(
         self, candidate: Output, data: DataTable, runner: Runner, n_mutations: int = 1, random_state: int = 42
@@ -382,16 +389,50 @@ class ShortenSegment(Mutator):
         return candidate.find_first(self._css_selector) is not None
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_state):
-        n_words = len(str(segment_content).split()) * self._reduction_factor
-        rewritten = await Output(
-            GenerateText(
-                Template(
-                    f"Summarize the text below in {n_words:0.0f} words or less. \n\n" "{{{text}}}",
-                    text=segment_content,
-                )
+        instructions = Template(
+            self._formatted_instructions(segment_content),
+            text=segment_content,
+        )
+
+        if not self._deterministic:
+            prompt = Union(
+                *[
+                    GenerateText(
+                        instructions,
+                        randomness=0.9,
+                        seed=random_state + i,
+                    )
+                    for i in range(n_mutations)
+                ]
             )
-        ).arun(runner)
-        return rewritten.outputs.raw_values[0].values_as_list()
+        else:
+            prompt = GenerateText(instructions, randomness=0)
+        return (await Output(prompt).arun(runner)).outputs.raw_values[0].values_as_list()
+
+    def _formatted_instructions(self, segment_content):
+        return self._rewrite_instructions.format(**self._kwargs)
+
+
+class SegmentToBulletPoints(Rewrite):
+    TEMPLATE = "Rewrite the text below as a bullet list with at most 10 words per bullet point. \n\n" "{{{{text}}}}"
+
+
+class Paraphrase(Rewrite):
+    TEMPLATE = "Paraphrase the text below. \n\n" "{{{{text}}}}"
+    DETERMINISTIC = False
+
+
+class ShortenSegment(Rewrite):
+    TEMPLATE = "Summarize the text below in {n_words:0.0f} words or less. \n\n" "{{{{text}}}}"
+
+    def __init__(self, css_selector: str, reduction_factor: float = 0.5):
+        super().__init__(css_selector)
+        self._css_selector = css_selector
+        self._reduction_factor = reduction_factor
+
+    def _formatted_instructions(self, segment_content):
+        n_words = len(str(segment_content).split()) * self._reduction_factor
+        return self._rewrite_instructions.format(n_words=n_words)
 
 
 class APO(Mutator):
@@ -611,44 +652,9 @@ class InduceInstructions(APE):
         return await self._induce_instructions(candidate, runner, n_mutations, random_state)
 
 
-class SegmentToBulletPoints(ShortenSegment):
-    async def _rewrite(self, runner, segment_content, n_mutations, random_seed):
-        return (
-            (
-                await Output(
-                    GenerateText(
-                        Template(
-                            f"Rewrite the text below as a bullet list with at most 10 words per bullet point. \n\n"
-                            "{{{text}}}",
-                            text=segment_content,
-                        )
-                    )
-                ).arun(runner)
-            )
-            .outputs.raw_values[0]
-            .values_as_list()
-        )
-
-
-class Paraphrase(ShortenSegment):
-    async def _rewrite(self, runner, segment_content, n_mutations, random_state):
-        rewrites = [
-            GenerateText(
-                Template(
-                    "Paraphrase the text inside the tags. Do not output the tags. \n\n" "<TEXT>{{{text}}}</TEXT>",
-                    text=segment_content,
-                ),
-                randomness=0.9,
-                seed=random_state + i,
-            )
-            for i in range(n_mutations)
-        ]
-        return (await Output(Union(*rewrites)).arun(runner)).outputs.raw_values[0].values_as_list()
-
-
-class RemoveStopWordsFromSegment(ShortenSegment):
+class RemoveStopWordsFromSegment(Rewrite):
     def __init__(self, css_selector: str | dict, choices: Any):
-        self._path_descriptor = css_selector
+        super().__init__(css_selector)
         self._choices = choices
 
     async def _rewrite(self, runner, segment_content, n_mutations, random_seed):

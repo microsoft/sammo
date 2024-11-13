@@ -251,7 +251,7 @@ def main(llm, task_id, method, uuid=None, confirmed=None, debug=False):
         click.confirm(f"Do you want to run {task_id} with {llm}?", abort=True, default=True)
 
     task_info = json.loads(pathlib.Path(DATA).read_bytes())[task_id]
-    data = {k: DataTable.from_json(v) for k, v in task_info["data"].items()}
+    data = {k: DataTable.from_json(v) for k, v in task_info["content"].items()}
     task_id = task_info["task_id"]
 
     model_config = MODEL_CONFIGS[llm]

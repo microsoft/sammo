@@ -105,6 +105,12 @@ async def test_replace_param():
 
 
 @pytest.mark.asyncio
+async def test_rewrite_missing_placeholder():
+    with pytest.raises(ValueError):
+        _ = Rewrite("#test", "content")
+
+
+@pytest.mark.asyncio
 async def test_apo(n_data=5, num_gradients=2):
     runner = MockedRunner(
         {

@@ -7,6 +7,7 @@
 A flexible, easy-to-use library for running and optimizing prompts for Large Language Models (LLMs).
 
 ## 🎉 News
+- Nov 13, 2024: Turn Markdown into prompt programs: First version of SAMMO express released
 - Nov 1, 2024: Use CSS selectors to query and modify prompt programs!
 - Oct 15, 2024: SAMMO now supports structured outputs!
 
@@ -39,6 +40,38 @@ cd sammo
 # launch jupyter notebook and open tutorials directory
 jupyter notebook --notebook-dir docs/tutorials
 ```
+
+## Example
+This example shows how easy it is to optimize a prompt with SAMMO. The full example is in the [user guide](https://microsoft.github.io/sammo/).
+```python
+runner = OpenAIChat(model_id="gpt-3.5-turbo", api_config=API_CONFIG)
+PROMPT_IN_MARKDOWN = """
+# Instructions <!-- #instr -->
+Convert the following user queries into a SQL query.
+
+# Table
+Users:
+- user_id (INTEGER, PRIMARY KEY)
+- name (TEXT)
+- age (INTEGER)
+- city (TEXT)
+
+# Complete this
+Input: {{{input}}}
+Output:
+"""
+
+spp = MarkdownParser(PROMPT_IN_MARKDOWN).get_sammo_program()
+mutation_operators = BagOfMutators(
+    Output(GenerateText(spp)),
+    Paraphrase("#instr"),
+    Rewrite("#instr", "Make this more verbose.\n\n {{{{text}}}}")
+)
+prompt_optimizer = BeamSearch(runner, mutation_operators, accuracy)
+prompt_optimizer.fit(d_train)
+prompt_optimizer.show_report()
+```
+
 ## Use Cases
 ![Overview](https://microsoft.github.io/sammo/_images/overview.png)
 
@@ -54,44 +87,24 @@ It is less useful if you want to build
 - Interactive, agent-based LLM applications (→ check out [AutoGen](https://microsoft.github.io/autogen/))
 - Interactive, production-ready LLM applications (→ check out [LangChain](https://www.langchain.com/))
 
-
-
-## Example
-This is extending the [chat dialog example from Guidance](https://github.com/guidance-ai/guidance#user-content-chat-dialog-notebook) by running queries in parallel.
-
-```python
-runner = OpenAIChat(model_id="gpt-3.5-turbo", api_config=API_CONFIG)
-expert_names = GenerateText(
-    Template(
-        "I want a response to the following question:"
-        "{{input}}\n"
-        "Name 3 world-class experts (past or present) who would be great at answering this? Don't answer the question yet."
-    ),
-    system_prompt="You are a helpful and terse assistant.",
-    randomness=0,
-    max_tokens=300,
-)
-
-joint_answer = GenerateText(
-    "Great, now please answer the question as if these experts had collaborated in writing a joint anonymous answer.",
-    history=expert_names,
-    randomness=0,
-    max_tokens=500,
-)
-
-questions = [
-    "How can I be more productive?",
-    "What will AI look like in 10 years?",
-    "How do we end world hunger?",
-]
-print(Output(joint_answer).run(runner, questions))
-```
-
 <!--end-->
 
 ## Licence
 
 This project is licensed under [MIT](https://choosealicense.com/licenses/mit/).
+
+To cite this paper, you can use the following BibTeX entry:
+
+```bibtex
+@inproceedings{schnabel-neville-2024-symbolic,
+    title = "Symbolic Prompt Program Search: A Structure-Aware Approach to Efficient Compile-Time Prompt Optimization",
+    author = "Schnabel, Tobias and Neville, Jennifer",
+    booktitle = "Findings of the Association for Computational Linguistics: EMNLP 2024",
+    year = "2024",
+    url = "https://aclanthology.org/2024.findings-emnlp.37",
+    pages = "670--686"
+}
+```
 
 ## Authors
 
