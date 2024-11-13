@@ -17,7 +17,7 @@ class XmlTree:
 
         root = etree.Element("root")
         sym_path = {root: ""}
-        print(pg_node)
+
         # Do a breadth-first search
         fifo_queue = [(pg_node, root)]
         while fifo_queue:

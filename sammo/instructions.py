@@ -1,6 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 from __future__ import annotations
+
+from abc import abstractmethod, ABC, ABCMeta
+
 import numpy as np
 from beartype.typing import Literal
 from frozendict import frozendict
@@ -11,7 +14,82 @@ from sammo.data import DataTable
 from sammo.dataformatters import DataFormatter
 
 
-class Renderer(Component):
+class Renderer(metaclass=ABCMeta):
+    @abstractmethod
+    def render_section(self, content, reference_id=None, reference_classes=None, title=None, depth=0):
+        pass
+
+    @abstractmethod
+    def render_paragraph(self, content, reference_id=None, reference_classes=None, depth=0):
+        pass
+
+    @abstractmethod
+    def render_metaprompt(self, content, depth=0, **kwargs):
+        pass
+
+
+class BaseRenderer(Renderer, ABC):
+    def render_metaprompt(self, content, depth=0, **kwargs):
+        return "\n".join(content).strip()
+
+    def render_paragraph(self, content, reference_id=None, reference_classes=None, depth=0):
+        return self.render_section(content, reference_id=reference_id, reference_classes=reference_classes, depth=depth)
+
+
+class MarkdownRenderer(BaseRenderer):
+    UNDERLINES = ["=", "-"]
+
+    def __init__(self, alternative_headings=False):
+        self._alternative_headings = alternative_headings
+
+    def render_section(self, content, reference_id=None, reference_classes=None, title=None, depth=0):
+        md_string = ""
+        if self._alternative_headings:
+            if depth > 2:
+                raise ValueError("Alternative headings are only supported up to depth 2.")
+            md_string += f"{title}\n{self.UNDERLINES[depth] * len(title)}\n"
+        else:
+            md_string += f"{'#' * (depth + 1)} {title}\n"
+        return md_string + "\n".join(content) + "\n"
+
+    def render_paragraph(self, data, **kwargs):
+        return "\n".join(data) + "\n\n"
+
+
+class MarkdownRendererAlt(MarkdownRenderer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, alternative_headings=True)
+
+
+class RawRenderer(BaseRenderer):
+    def render_section(self, content, reference_id=None, reference_classes=None, title=None, depth=0):
+        title = title if title is not None else ""
+        return title + "".join([str(c) for c in content])
+
+    def render_metaprompt(self, content, depth=0, **kwargs):
+        return "".join(content).strip()
+
+
+class XmlRenderer(BaseRenderer):
+    def _render_section(self, content, reference_id=None, reference_classes=None, title=None, depth=0, kind="section"):
+        outer_element = lambda x: f"\n<{kind}>{x}\n</{kind}>"
+        xml_element_w_tag = lambda x, tag: f"\n<{tag}>{x}</{tag}>"
+
+        inner = ""
+        if reference_id is not None:
+            inner += xml_element_w_tag(reference_id, "id")
+        if title is not None:
+            inner += xml_element_w_tag(title, "title")
+        return outer_element(inner + "\n".join(content))
+
+    def render_section(self, content, reference_id=None, reference_classes=None, title=None, depth=0):
+        return self._render_section(content, reference_id, reference_classes, title, depth, kind="section")
+
+    def render_paragraph(self, content, reference_id=None, reference_classes=None, title=None, depth=0):
+        return self._render_section(content, reference_id, reference_classes, None, depth, kind="paragraph")
+
+
+class DocumentComponent(Component):
     def __init__(self, content, reference_id: str | None = None, reference_classes: list[str] | None = None):
         super().__init__(content, reference_id)
         if not isinstance(content, list):
@@ -19,7 +97,7 @@ class Renderer(Component):
         if not isinstance(self, Paragraph):
             content = [Paragraph(c) if isinstance(content, str) else c for c in content]
         self.content = content
-        self._classes = reference_classes
+        self._attributes = dict(reference_classes=reference_classes, reference_id=reference_id)
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> Component:
         depth = dynamic_context.get("depth", -1)
@@ -29,22 +107,17 @@ class Renderer(Component):
             for child in self.content
         ]
         children = self._unwrap_results(children_results)
-
-        render_as = dynamic_context["render_as"]
-        if render_as == "xml":
-            rendered = self.render_as_xml(children, depth=depth)
-        elif render_as == "raw":
-            rendered = self.render_as_raw(children)
-        else:
-            rendered = self.render_as_markdown(children, depth=depth, alternative_headings="alt" in render_as)
+        rendered = getattr(dynamic_context["renderer"], f"render_{self.__class__.__name__.lower()}")(
+            children, depth=depth, **self._attributes
+        )
         return TextResult(rendered, op=self, parent=children_results)
 
 
-class Section(Renderer):
+class Section(DocumentComponent):
     def __init__(self, title, content, reference_id=None, reference_classes=None):
-        super().__init__(content, reference_id)
-        self._title = title
-        self._classes = reference_classes
+        super().__init__(content, reference_id, reference_classes)
+        if title is not None:
+            self._attributes["title"] = title
 
     def static_text(self, sep="\n"):
         return "\n".join([v.static_text(sep) if hasattr(v, "static_text") else str(v) for v in self.content])
@@ -52,44 +125,20 @@ class Section(Renderer):
     def set_static_text(self, text):
         return self.rebind({"content": text})
 
-    def render_as_markdown(self, data, alternative_headings=False, depth=0, **kwargs):
-        UNDERLINES = ["=", "-"]
-        md_string = ""
-        title = self._title
-        if alternative_headings:
-            if depth > 2:
-                raise ValueError("Alternative headings are only supported up to depth 2.")
-            md_string += f"{title}\n{UNDERLINES[depth] * len(title)}\n"
-        else:
-            md_string += f"{'#' * (depth + 1)} {title}\n"
-        return md_string + "\n".join(data) + "\n"
-
-    def render_as_xml(self, content, depth=0):
-        kind = self.__class__.__name__.lower()
-        outer_element = lambda x: f"\n<{kind}>{x}\n</{kind}>"
-        xml_element_w_tag = lambda x, tag: f"\n<{tag}>{x}</{tag}>"
-
-        inner = ""
-        if self._id is not None:
-            inner += xml_element_w_tag(self.id, "reference_id")
-        if self._title is not None:
-            inner += xml_element_w_tag(self._title, "title")
-        return outer_element(inner + "\n".join(content))
-
-    def render_as_raw(self, content):
-        return "".join(content)
-
 
 class Paragraph(Section):
     def __init__(self, content, reference_id=None, reference_classes=None):
         super().__init__(None, content, reference_id, reference_classes)
-        self._name = None
-
-    def render_as_markdown(self, data, alternative_headings=False, depth=0):
-        return "\n".join(data) + "\n\n"
 
 
-class MetaPrompt(Renderer):
+class MetaPrompt(DocumentComponent):
+    RENDERERS = {
+        "xml": XmlRenderer,
+        "raw": RawRenderer,
+        "markdown": MarkdownRenderer,
+        "markdown-alt": MarkdownRendererAlt,
+    }
+
     def __init__(
         self,
         child: list[Paragraph | Section] | Paragraph | Section,
@@ -100,24 +149,15 @@ class MetaPrompt(Renderer):
     ):
         super().__init__(child, reference_id)
 
-        self._render_as = render_as
+        self._renderer = self.RENDERERS[render_as]()
         self._data_formatter = data_formatter
         self._seed = seed
-
-    def render_as_markdown(self, data, alternative_headings=False, depth=0):
-        return "\n".join(data).strip()
-
-    def render_as_xml(self, data, depth=0):
-        return "\n".join(data).strip()
-
-    def render_as_raw(self, data):
-        return "".join(data).strip()
 
     async def _call(self, runner: Runner, context: dict, dynamic_context: frozendict | None) -> LLMResult:
         context["data_formatter"] = self._data_formatter
         if dynamic_context is None:
             dynamic_context = dict()
-        dynamic_context = frozendict({**dynamic_context, "render_as": self._render_as})
+        dynamic_context = frozendict({**dynamic_context, "renderer": self._renderer})
         return await super()._call(runner, context, dynamic_context)
 
     def with_extractor(self, on_error: Literal["raise", "empty_result"] = "raise"):

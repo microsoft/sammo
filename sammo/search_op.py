@@ -33,7 +33,7 @@ def get_points_from_search_space(
         search_space = pg.list(search_space)
     elif isinstance(search_space, dict):
         search_space = pg.dict(search_space)
-    if isinstance(search_space, Callable):
+    if isinstance(search_space, Callable) and not isinstance(search_space, pg.Object):
         candidates = list()
         for context in pg.iter(
             pg.hyper.trace(search_space),
@@ -44,7 +44,7 @@ def get_points_from_search_space(
             with context():
                 candidates.append(search_space())
     elif search_space.is_deterministic:
-        candidates = [search_space] * n_points
+        candidates = [search_space.clone(deep=True)] * n_points
     elif sample:
         candidates = list(pg.random_sample(search_space, n_points, seed=seed))
     else:

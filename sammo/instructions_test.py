@@ -88,8 +88,10 @@ async def test_paragraph(render_as, expected):
 @pytest.mark.asyncio
 async def test_raw_render():
     runner = MockedRunner()
-    rendered = await MetaPrompt([Paragraph("Paragraph 1\n"), Paragraph("Paragraph 2")], render_as="raw")(runner, dict())
-    assert rendered.value == "Paragraph 1\nParagraph 2"
+    rendered = await MetaPrompt(
+        [Section("My title\n", "Section 1"), Paragraph("Paragraph 1\n"), Paragraph("Paragraph 2")], render_as="raw"
+    )(runner, dict())
+    assert rendered.value == "My title\nSection 1Paragraph 1\nParagraph 2"
 
 
 @pytest.mark.asyncio

@@ -5,6 +5,8 @@ from mistletoe.block_token import List
 from mistletoe.markdown_renderer import MarkdownRenderer
 
 from mistletoe import Document, block_token
+
+from sammo.base import Template
 from sammo.instructions import MetaPrompt, Section, Paragraph
 
 HTML_COMMENT = re.compile(r"<!--(.*?)-->")
@@ -34,16 +36,29 @@ def _get_ids_and_classes(text):
     return {"text": rest, "ids": ids, "classes": classes}
 
 
-class ExpressParser:
+class MarkdownParser:
     def __init__(self, input_text: str):
-        aux_tree, config = self._parse_annotated_markdown(input_text)
-        self.parsed_config = config
-        self.parsed_tree = self._aux_tree_to_sammo(aux_tree)
+        self._input_text = input_text
+        self._sammo_tree, self._sammo_config = None, None
+
+    def _parse(self):
+        if self._sammo_tree is None:
+            json_tree, config = self._parse_annotated_markdown(self._input_text)
+            self._sammo_tree = self._json_to_sammo(json_tree)
+            self._sammo_config = config
+
+    def get_sammo_program(self):
+        self._parse()
+        return self._sammo_tree
+
+    def get_sammo_config(self):
+        self._parse()
+        return self._sammo_config
 
     @staticmethod
     def from_file(file_path):
         with open(file_path, "r", encoding="utf-8") as file:
-            return ExpressParser(file.read())
+            return MarkdownParser(file.read())
 
     @staticmethod
     def _parse_annotated_markdown(text):
@@ -64,7 +79,7 @@ class ExpressParser:
                         d = _get_ids_and_classes(mrender.render(c))
                         classes.update(d["classes"])
                         ids.update(d["ids"])
-                        list_elements.append([d["text"]])
+                        list_elements.append(d["text"])
 
                     last.current.append(
                         {"type": "list", "children": list_elements, "class": list(classes), "id": list(ids)}
@@ -97,7 +112,7 @@ class ExpressParser:
         return {"type": "root", "children": processed}, sammo_config
 
     @classmethod
-    def _aux_tree_to_sammo(cls, node):
+    def _json_to_sammo(cls, node):
         def _empty_to_none(x):
             return None if len(x) == 0 else x
 
@@ -114,19 +129,21 @@ class ExpressParser:
                 reference_classes=_empty_to_none(x.get("class", [])),
             )
 
-        if not isinstance(node, dict):
+        if isinstance(node, str) and "{{" in node:
+            return Template(node)
+        elif not isinstance(node, dict):
             return node
         elif node["type"] == "root":
-            return MetaPrompt([cls._aux_tree_to_sammo(child) for child in node["children"]])
+            return MetaPrompt([cls._json_to_sammo(child) for child in node["children"]], render_as="raw")
         elif node["type"] == "section":
             return Section(
                 title=node["title"],
-                content=[cls._aux_tree_to_sammo(child) for child in node["children"]],
+                content=[cls._json_to_sammo(child) for child in node["children"]],
                 **_get_annotations(node),
             )
         elif node["type"] in ["paragraph", "list", "blockcode", "codefence", "quote"]:
-            return Paragraph(content=node["children"], **_get_annotations(node))
-        elif isinstance(node, (str, int, float)):
-            return node
+            return Paragraph(
+                content=[cls._json_to_sammo(child) for child in node["children"]], **_get_annotations(node)
+            )
         else:
             raise ValueError(f"Unsupported type: {type(node)} with node: {node}")
