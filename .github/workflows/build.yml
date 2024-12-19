@@ -9,6 +9,7 @@ on:
       - main
   release:
     types: [published]
+  workflow_dispatch:
 jobs:
   build:
     name: Build
@@ -142,8 +143,8 @@ jobs:
   release-publish-pages:
     name: Publish Documentation Site
     runs-on: ubuntu-latest
-    needs: release-publish-artifacts
-    if: github.event_name == 'release'
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: bash
@@ -157,6 +158,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: Download zipped documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: zipped-documentation
+          path: dist/
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
