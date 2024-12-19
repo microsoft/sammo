@@ -69,7 +69,7 @@ jobs:
           twine check --strict dist/*
       - name: Store the distribution files
         uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
         with:
           name: python-package-distributions
           path: dist/
@@ -77,7 +77,7 @@ jobs:
         run: |
           poetry run poe build-docs
       - name: Zip documentation
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
         run: |
           DOCS_VERSION=`poetry version -s`
           mkdir _build_docs/dist
@@ -86,12 +86,12 @@ jobs:
           popd
       - name: Store the documentation artifacts for GitHub Pages
         uses: actions/upload-pages-artifact@v3
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
         with:
           path: _build_docs/_build/html
       - name: Store the zipped documentation
         uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
         with:
           name: zipped-documentation
           path: _build_docs/dist/
