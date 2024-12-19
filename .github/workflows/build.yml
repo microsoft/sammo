@@ -23,6 +23,7 @@ jobs:
           - macos-latest
         python:
           - "3.11"
+          - "3.12"
 
     runs-on: ${{ matrix.os }}
 
