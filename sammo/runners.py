@@ -448,7 +448,13 @@ class AzureMixIn:
             self._api_config["endpoint"] = self._api_config["endpoint"][:-1]
 
     def _get_headers(self):
-        return {"api-key": self._api_config["api_key"], "Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json"}
+        if "api_key" in self._api_config:
+            headers = {"api_key": self._api_config["api_key"]}
+        elif "azure_ad_token_provider":
+            # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/managed-identity#chat-completions
+            headers = {"Authorization": f"Bearer {self._api_config["azure_ad_token_provider"]()}"}
+        return headers
 
     def _rest_url(self):
         return (
