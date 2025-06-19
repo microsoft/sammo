@@ -20,27 +20,28 @@ pybars.Compiler._builder.add_escaped_expand = pybars.Compiler._builder.add_expan
 
 
 class Costs:
-    __slots__ = "input", "output"
+    __slots__ = "input", "output", "reasoning"
 
-    def __init__(self, input_costs=0, output_costs=0):
+    def __init__(self, input_costs=0, output_costs=0, reasoning_costs=0):
         self.input = input_costs
         self.output = output_costs
+        self.reasoning = reasoning_costs
 
     @property
     def total(self):
         return self.input + self.output
 
     def __add__(self, other):
-        return Costs(self.input + other.input, self.output + other.output)
+        return Costs(self.input + other.input, self.output + other.output, self.reasoning + other.reasoning)
 
     def __sub__(self, other):
-        return Costs(self.input - other.input, self.output - other.output)
+        return Costs(self.input - other.input, self.output - other.output, self.reasoning - other.reasoning)
 
     def __repr__(self):
-        return f"Costs(input={self.input}, output={self.output})"
+        return f"Costs(input={self.input}, output={self.output}, reasoning={self.reasoning})"
 
     def to_dict(self):
-        return {"input": self.input, "output": self.output}
+        return {"input": self.input, "output": self.output, "reasoning": self.reasoning}
 
 
 @pg.symbolize
