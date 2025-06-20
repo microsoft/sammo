@@ -649,13 +649,14 @@ class GeminiChat(RestRunner):
         if request.get("generationConfig", {}).get("responseMimeType", "") == "application/json":
             if len(response_text):
                 response_text = json.loads(response_text)
-
         usage = json_data["usageMetadata"]
         prompt_logger.debug(f"\n\n\nAPI call:\n{request}\n->\n\n{json_data}")
         return LLMResult(
             response_text,
             history=request["contents"] + [response],
-            costs=Costs(usage["promptTokenCount"], usage.get("candidatesTokenCount", 0), usage.get("thoughtsTokenCount", 0)),
+            costs=Costs(
+                usage["promptTokenCount"], usage.get("candidatesTokenCount", 0), usage.get("thoughtsTokenCount", 0)
+            ),
             request_text=request_text,
         )
 

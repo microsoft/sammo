@@ -212,7 +212,7 @@ def test_infer_schema_empty_list():
 
 def test_infer_schema_set_of_strings():
     data = {"apple", "banana", "cherry"}
-    expected = {"type": "string", "enum": list(data)}
+    expected = {"type": "string", "enum": sorted(list(data))}
     assert JsonSchema._guess_schema(data, top_level=False) == expected
 
 
