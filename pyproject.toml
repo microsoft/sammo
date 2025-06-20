@@ -56,6 +56,7 @@ poethepoet = "^0.24.4"
 jupyter-book = "^0.15"
 astroid = "^3.0.2"
 sphinx-autodoc2 = "*"
+jupyterlab = "^4.0"
 poetry-core = "^1.8.1"  # (see set_version.py)
 
 [tool.black]
