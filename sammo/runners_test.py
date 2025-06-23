@@ -34,7 +34,7 @@ def test_costs_subtraction():
 def test_costs_to_dict():
     c = Costs(input_costs=1, output_costs=2)
     result = c.to_dict()
-    assert result == {"input": 1, "output": 2}
+    assert result == {"input": 1, "output": 2, "reasoning": 0}
 
 
 def test_costs_total():

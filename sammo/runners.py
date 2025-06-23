@@ -79,7 +79,10 @@ class JsonSchema:
             )
 
         elif isinstance(data, list):
-            if len(data) == 1:
+            first_item = list(data)[0]
+            if all(isinstance(item, type(first_item)) for item in data) and type(first_item) in type_map:
+                return {"type": "array", "items": {"type": type_map[type(first_item)]}} | desc
+            elif len(data) == 1:
                 items_schema = cls._guess_schema(data[0], convention=convention)
                 return {"type": "array", "items": items_schema} | desc
             else:
