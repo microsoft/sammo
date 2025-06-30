@@ -17,7 +17,6 @@ from contextlib import asynccontextmanager
 
 import aiohttp
 from aiohttp.client_exceptions import ClientConnectorError
-import orjson
 from beartype import beartype
 from beartype.typing import Literal, Union
 
@@ -26,6 +25,7 @@ from sammo.base import LLMResult, Costs, Runner
 from sammo.store import PersistentDict, SqlLiteDict
 from sammo.throttler import AtMost, Throttler
 from sammo.utils import serialize_json
+from json import JSONDecodeError
 
 logger = logging.getLogger(__name__)
 prompt_logger = logging.getLogger(PROMPT_LOGGER_NAME)
@@ -63,6 +63,7 @@ class JsonSchema:
         type_map = {int: "integer", float: "number", str: "string", bool: "boolean"}
         desc = {"description": desc} if desc is not None else {}
         extra = {"additionalProperties": False} if convention == "openai" else {}
+
         if isinstance(data, dict):
             return (
                 {
@@ -76,18 +77,37 @@ class JsonSchema:
                 | extra
                 | desc
             )
+
         elif isinstance(data, list):
-            return {"type": "array", "items": cls._guess_schema(data[0], convention=convention)} | desc
+            first_item = list(data)[0]
+            if all(isinstance(item, type(first_item)) for item in data) and type(first_item) in type_map:
+                return {"type": "array", "items": {"type": type_map[type(first_item)]}} | desc
+            elif len(data) == 1:
+                items_schema = cls._guess_schema(data[0], convention=convention)
+                return {"type": "array", "items": items_schema} | desc
+            else:
+                items = list()
+                for d in data:
+                    if isinstance(d, dict):
+                        if len(d) != 1:
+                            raise ValueError("List of dicts must have only one key.")
+                        name, subtype = list(cls._guess_schema(d, convention=convention)["properties"].items())[0]
+                        items.append({"type": subtype["type"], "description": name})
+                return {"type": "array", "prefixItems": items, "items": {"type": "null"}}
+            return
+
         elif isinstance(data, set):
             first_item = list(data)[0]
             if all(isinstance(item, type(first_item)) for item in data) and type(first_item) in type_map:
-                return {"type": type_map[type(first_item)], "enum": list(data)} | desc
+                return {"type": type_map[type(first_item)], "enum": sorted(list(data))} | desc
             elif all(type(item) in type_map for item in data):
                 return {"type": sorted(list({type_map[type(item)] for item in data}))}
             else:
                 return {"anyOf": [cls._guess_schema(item, convention=convention) for item in data]} | desc
+
         elif isinstance(data, (str, int, float, bool)):
             return {"type": type_map[type(data)]} | desc
+
         else:
             raise TypeError(f"Cannot translate {data} to schema")
 
@@ -267,7 +287,10 @@ class BaseRunner(Runner):
             raise RuntimeError(f"Could not get completion for {request.params}")
 
     def _augmented_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
-        result = self._to_llm_result(request, json_data, fingerprint)
+        try:
+            result = self._to_llm_result(request, json_data, fingerprint)
+        except JSONDecodeError as exc:
+            raise RetriableError(f"Received broken JSON response: {exc!s}. Raw response: {json_data!s}")
         result.fingerprint = fingerprint
         result.extra_data = json_data
         return result
@@ -286,9 +309,7 @@ class BaseRunner(Runner):
 
     @asynccontextmanager
     async def _get_session(self):
-        async with aiohttp.ClientSession(
-            json_serialize=lambda x: orjson.dumps(x).decode(), timeout=aiohttp.ClientTimeout(None, None, None)
-        ) as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(None, None, None)) as session:
             yield session
 
     def _get_headers(self):
@@ -395,7 +416,12 @@ class OpenAIChat(OpenAIBaseRunner):
         revised_prompt = self._post_process_prompt(prompt)
         messages += [{"role": "user", "content": revised_prompt}]
 
-        request = dict(messages=messages, max_tokens=self._max_context_window or max_tokens, temperature=randomness)
+        # special treatment for newer models
+        randomness = 1 if self._model_id.startswith("o") else randomness
+        length_limit_key = "max_completion_tokens" if self._model_id.startswith("o") else "max_tokens"
+
+        request = dict(messages=messages, temperature=randomness)
+        request[length_limit_key] = self._max_context_window or max_tokens
         if json_mode is True:
             request["response_format"] = {"type": "json_object"}
         elif isinstance(json_mode, JsonSchema):
@@ -404,14 +430,17 @@ class OpenAIChat(OpenAIBaseRunner):
                 "json_schema": {"strict": True, "name": "output", "schema": json_mode.schema},
             }
         fingerprint = serialize_json({"seed": seed, "generative_model_id": self._equivalence_class, **request})
-
         return await self._execute_request(request | {"model": self._model_id}, fingerprint, priority)
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
         request_text = request["messages"][-1]["content"]
         prompt_logger.debug(f"\n\n\nAPI call:\n{request_text}\n->\n\n{json_data['choices'][0]['message']['content']}")
+        llm_response = json_data["choices"][0]["message"]["content"]
+        if request.get("response_format", {"type": ""})["type"].startswith("json"):
+            llm_response = json.loads(llm_response)
+
         return LLMResult(
-            json_data["choices"][0]["message"]["content"],
+            llm_response,
             history=request["messages"] + [json_data["choices"][0]["message"]],
             costs=self._extract_costs(json_data),
             request_text=request["messages"][-1]["content"],
@@ -425,6 +454,9 @@ class OpenAIChat(OpenAIBaseRunner):
         return Costs(
             input_costs=json_data["usage"].get("prompt_tokens", 0),
             output_costs=json_data["usage"].get("completion_tokens", 0),
+            reasoning_costs=json_data["usage"]
+            .get("completion_tokens_details", {"reasoning_tokens": 0})
+            .get("reasoning_tokens", 0),
         )
 
 
@@ -616,14 +648,24 @@ class GeminiChat(RestRunner):
 
     def _to_llm_result(self, request: dict, json_data: dict, fingerprint: str | bytes) -> LLMResult:
         request_text = request["contents"][-1]["parts"][0]["text"]
-        response = json_data["candidates"][0]["content"]["parts"][0]
+
+        responses = json_data["candidates"][0]
+        if "content" in responses:
+            response = responses["content"]["parts"][0]
+        else:
+            response = []
         response_text = response["text"]
+        if request.get("generationConfig", {}).get("responseMimeType", "") == "application/json":
+            if len(response_text):
+                response_text = json.loads(response_text)
         usage = json_data["usageMetadata"]
-        prompt_logger.debug(f"\n\n\nAPI call:\n{request_text}\n->\n\n{response_text}")
+        prompt_logger.debug(f"\n\n\nAPI call:\n{request}\n->\n\n{json_data}")
         return LLMResult(
             response_text,
             history=request["contents"] + [response],
-            costs=Costs(usage["promptTokenCount"], usage["candidatesTokenCount"]),
+            costs=Costs(
+                usage["promptTokenCount"], usage.get("candidatesTokenCount", 0), usage.get("thoughtsTokenCount", 0)
+            ),
             request_text=request_text,
         )
 
@@ -688,6 +730,13 @@ class AnthropicChat(RestRunner):
                 system=system_prompt,
             )
         )
+        if "3-7" in self._model_id:
+            request["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": request["max_tokens"],
+            }
+            del request["temperature"]
+            request["max_tokens"] *= 2
         if json_mode is True:
             raise NotImplementedError("JSON mode not supported for Anthropic models.")
         if isinstance(json_mode, JsonSchema):
