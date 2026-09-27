@@ -82,7 +82,9 @@ class PersistentDict(MutableMapping, JSONConvertible):
                 self._fp = open(self._filename, "wb")
             else:
                 self._fp = open(self._filename, "r+b")
-            self._fp.seek(0, os.SEEK_END)
+
+        # Another writer may have appended since this handle's previous write.
+        self._fp.seek(0, os.SEEK_END)
 
         # Mark the new line as a comment until fully written out
         offset = self._fp.tell()
