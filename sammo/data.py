@@ -124,8 +124,7 @@ class DataTable(pg.JSONConvertible):
         )
 
     def _slice_to_explicit_idx(self, key: slice):
-        max_idx = len(self)
-        return list(range(key.start or 0, min(key.stop or max_idx, max_idx), key.step or 1))
+        return list(range(*key.indices(len(self))))
 
     @classmethod
     def from_records(
