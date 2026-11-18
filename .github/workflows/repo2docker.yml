@@ -9,9 +9,9 @@ jobs:
   prefetch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@3542bca2639a428e1796aaa6a2ffef0c0f575566 # v3.1.4
         with:
           python-version: 3.x
       - name: Install dependencies
